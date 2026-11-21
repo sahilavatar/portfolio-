@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="A case study on replacing a legacy Press 1 IVR at a Tier-1 bank with an LLM voice concierge, using grounded answers, masked PII and warm human handoffs.">
+<title>From Press 1 to Voice Concierge: Migrating a Tier-1 Bank's Support IVR</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,600&display=swap">
+<style>
+/* Layout: one reading column, diagrams and tables at full column width, same tokens as the prototype so the two pages feel like one project. */
+:root {
+  --bg: #F2F5F8;
+  --surface: #FFFFFF;
+  --surface-2: #E9EFF4;
+  --ink: #13202B;
+  --muted: #58697A;
+  --line: #D5DEE6;
+  --axis: #A9B8C5;
+  --accent: #0B5FA5;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #E1EEF9;
+  --display: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  --body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not(.light) {
+    --bg: #0D141A;
+    --surface: #141E27;
+    --surface-2: #1B2733;
+    --ink: #E4ECF2;
+    --muted: #8FA2B3;
+    --line: #26343F;
+    --axis: #566A7B;
+    --accent: #62AEEA;
+    --accent-ink: #0B1620;
+    --accent-soft: #14304A;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"], :root.dark {
+  --bg: #0D141A;
+  --surface: #141E27;
+  --surface-2: #1B2733;
+  --ink: #E4ECF2;
+  --muted: #8FA2B3;
+  --line: #26343F;
+  --axis: #566A7B;
+  --accent: #62AEEA;
+  --accent-ink: #0B1620;
+  --accent-soft: #14304A;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.65;
+}
+.wrap { max-width: 720px; margin: 0 auto; padding-inline: 16px; padding-block: 48px 72px; }
+.eyebrow { margin: 0 0 12px; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+h1 { font-family: var(--display); font-weight: 600; font-size: clamp(32px, 6vw, 46px); line-height: 1.1; margin: 0; text-wrap: balance; }
+.dek { font-family: var(--display); font-size: clamp(19px, 3vw, 24px); line-height: 1.3; color: var(--muted); margin: 10px 0 0; text-wrap: balance; }
+.by { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; margin: 22px 0 0; color: var(--muted); font-size: 14px; }
+.cta { display: inline-flex; align-items: center; min-height: 40px; padding: 8px 16px; border-radius: 8px; background: var(--accent); color: var(--accent-ink); font-weight: 600; text-decoration: none; cursor: pointer; }
+.cta:hover { filter: brightness(1.08); }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+h2 { font-family: var(--display); font-weight: 600; font-size: 26px; line-height: 1.25; margin: 48px 0 12px; text-wrap: balance; }
+header + h2, header + * + h2 { margin-top: 40px; }
+p, ul, ol { max-width: 68ch; margin: 0 0 16px; }
+ul, ol { padding-left: 22px; }
+li { margin-bottom: 8px; padding-left: 4px; }
+li::marker { color: var(--muted); }
+strong { font-weight: 600; }
+.scroll { overflow-x: auto; margin: 20px 0; -webkit-overflow-scrolling: touch; }
+table { width: 100%; border-collapse: collapse; font-size: 14.5px; line-height: 1.5; min-width: 520px; }
+table.glance { min-width: 0; }
+th, td { text-align: left; vertical-align: top; padding: 10px 14px 10px 0; border-bottom: 1px solid var(--line); }
+thead th { font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--axis); }
+tbody th { font-weight: 600; white-space: nowrap; padding-right: 20px; }
+table.glance tbody th { color: var(--muted); font-weight: 500; }
+figure { margin: 28px 0; }
+figure .scroll { margin: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); padding: 8px; }
+svg.diagram { display: block; width: 100%; min-width: 640px; height: auto; }
+svg text { font-family: var(--body); font-size: 13px; }
+svg .ink { fill: var(--ink); }
+svg .qt { fill: var(--muted); }
+svg .b { font-weight: 600; }
+svg .s { font-size: 11.5px; }
+svg .l { font-size: 15px; }
+svg .m { text-anchor: middle; }
+svg .node { fill: none; stroke: var(--axis); stroke-width: 1.25; }
+svg .node.main { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 2; }
+svg .edge { fill: none; stroke: var(--axis); stroke-width: 1.25; }
+svg .head { fill: var(--axis); }
+svg .band { fill: var(--surface-2); stroke: var(--axis); stroke-width: 1.25; }
+</style>
+</head>
+<body>
+<script>
+// Follows the host site's theme: ?theme=dark|light, a postMessage from the parent, or (same-origin iframe) the parent's data-theme or dark/light class. Otherwise it follows the visitor's system setting.
+(function () {
+  var root = document.documentElement;
+  var set = function (t) { if (t === 'dark' || t === 'light') root.setAttribute('data-theme', t); };
+  try { set(new URLSearchParams(location.search).get('theme')); } catch (e) {}
+  window.addEventListener('message', function (e) { var d = e.data; if (d && d.type === 'theme') set(d.theme); });
+  try {
+    if (window.parent !== window) {
+      var pr = window.parent.document.documentElement;
+      var read = function () {
+        var c = pr.classList;
+        set(pr.getAttribute('data-theme') || (c.contains('dark') ? 'dark' : c.contains('light') ? 'light' : null));
+      };
+      read();
+      new MutationObserver(read).observe(pr, { attributes: true, attributeFilter: ['class', 'data-theme'] });
+    }
+  } catch (e) {}
+})();
+</script>
+<main class="wrap">
+<header>
+  <p class="eyebrow">Case study</p>
+  <h1>From Press 1 to Voice Concierge</h1>
+  <p class="dek">Migrating a Tier-1 Bank's Support IVR</p>
+  <p class="by"><span>Sahil · 4 March 2026</span><a class="cta" href="./">See the prototype</a></p>
+</header>
+
+<h2>At a glance</h2>
+<div class="scroll"><table class="glance"><thead><tr><th scope="col">Dimension</th><th scope="col">Detail</th></tr></thead><tbody><tr><th scope="row">Status</th><td>Agentic concept; no production results are claimed</td></tr><tr><th scope="row">Domain</th><td>Internal employee IT support at a bank</td></tr><tr><th scope="row">Replaces</th><td>Legacy "Press 1" IVR</td></tr><tr><th scope="row">First flows</th><td>VPN troubleshooting, MFA resets</td></tr><tr><th scope="row">Core pattern</th><td>Grounded answers, masked PII, warm human handoff</td></tr><tr><th scope="row">Hands off to</th><td>Human agents in ServiceNow or Genesys</td></tr></tbody></table></div>
+
+<h2>Executive summary</h2>
+<p>The proposal replaces a legacy "Press 1" IVR for employee IT support with an LLM-powered voice concierge, migrating in phases instead of in one cutover. At a Tier-1 bank like JPMC, the path matters as much as the destination: accuracy, privacy and continuity of service cannot be traded for speed.</p>
+<p>Three principles anchor the design:</p>
+<ul><li><strong>Data-driven intent mapping.</strong> Historical support transcripts, not assumptions, decide which flows move first.</li><li><strong>Zero-hallucination guardrails.</strong> Every answer is grounded in verified internal SOPs, and PII is masked before it reaches a model.</li><li><strong>Frictionless human handoffs.</strong> When AI can't resolve an issue, a human agent receives full context, so the employee never repeats themselves.</li></ul>
+
+<h2>Context and challenge</h2>
+<p>A menu-driven IVR forces employees to translate a problem into a keypad path, and it fails the moment a problem doesn't fit the menu. For internal IT support, that means frustrated callers, misrouted tickets and agents spending time on issues that should resolve in seconds, such as VPN failures and MFA resets.</p>
+<p>Replacing it at JPMC scale is hard for reasons beyond the technology:</p>
+<ul><li><strong>Accuracy is non-negotiable.</strong> A wrong answer about access or security is worse than no answer.</li><li><strong>Sensitive data is in every call.</strong> Employee identifiers and account details can't flow freely into third-party models.</li><li><strong>Support can't go dark.</strong> Agents in ServiceNow and Genesys keep working while the new front door is built beside the old one.</li><li><strong>Trust has to be earned.</strong> A big-bang replacement invites a failure that sets adoption back; a visible quick win builds the case for the next phase.</li></ul>
+
+<h2>Principle 1: Data-driven intent mapping</h2>
+<p>The first flows to migrate are chosen from evidence. Unsupervised LLM clustering runs over historical support transcripts and groups them by what employees actually asked for, rather than by the categories the old menu assumed.</p>
+<p>The output is a ranked map of intents. High-volume, high-friction, well-understood flows go first, and VPN troubleshooting and MFA resets are the expected candidates. They are frequent, procedural and already documented, so they deliver visible return on investment quickly with the lowest risk.</p>
+<p>Clustering also surfaces what the menu never captured: intents nobody planned for, and the long tail that should stay with human agents.</p>
+
+<h2>Principle 2: Zero-hallucination guardrails</h2>
+<p>The concierge answers only from what the bank has already verified. A Retrieval-Augmented Generation (RAG) framework grounds every response strictly in JPMC's internal standard operating procedures (SOPs). If no approved source supports an answer, the system doesn't improvise; it hands off.</p>
+<p>A "Privacy Gate" sits in front of the model. It masks PII in the transcript before any text reaches an LLM, so the model reasons over placeholders and never sees raw identifiers.</p>
+<p>Together, the two controls separate what the system may say (verified SOPs only) from what it may see (masked data only). Both can be audited independently.</p>
+
+<h2>Principle 3: Frictionless human handoffs</h2>
+<p>AI should never trap an employee in a loop. A "Warm Handoff" passes structured intent and sentiment data directly to a human agent in ServiceNow or Genesys, so the agent starts from the problem rather than from "How can I help you?"</p>
+<p>The handoff carries three things:</p>
+<ul><li><strong>What the employee wants:</strong> the detected intent and what has already been tried.</li><li><strong>How they feel:</strong> a sentiment signal, so frustrated callers get priority and a calmer tone.</li><li><strong>Where it happened:</strong> the conversation context, so no one repeats themselves.</li></ul>
+<p>This also makes escalation a feature rather than a failure. Every handoff is a labelled example that can sharpen intent mapping in the next cycle.</p>
+
+<h2>System design: how a call flows</h2>
+<figure><div class="scroll"><svg class="diagram" viewBox="0 0 760 410" role="img" aria-labelledby="call-t"><title id="call-t">Every call is masked first, and anything unsupported goes to a person</title><defs><marker id="call-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="head" d="M0 0L10 5L0 10z"/></marker></defs><text class="ink b l" x="24" y="34">Every call is masked first, and anything unsupported goes to a person</text><path class="edge" d="M160 96H192" marker-end="url(#call-arrow)"/><path class="edge" d="M328 96H360" marker-end="url(#call-arrow)"/><path class="edge" d="M496 96H528" marker-end="url(#call-arrow)"/><path class="edge" d="M596 124V180" marker-end="url(#call-arrow)"/><path class="edge" d="M516 216H448" marker-end="url(#call-arrow)"/><path class="edge" d="M596 252V314" marker-end="url(#call-arrow)"/><path class="edge" d="M360 244V350H480" marker-end="url(#call-arrow)"/><rect class="node" x="24" y="68" width="136" height="56" rx="8"/><text class="ink b m" x="92" y="92">Employee call</text><text class="qt s m" x="92" y="110">Voice transcript</text><rect class="node" x="192" y="68" width="136" height="56" rx="8"/><text class="ink b m" x="260" y="92">Privacy Gate</text><text class="qt s m" x="260" y="110">Masks PII first</text><rect class="node" x="360" y="68" width="136" height="56" rx="8"/><text class="ink b m" x="428" y="92">Intent match</text><text class="qt s m" x="428" y="110">Ranked intent map</text><rect class="node" x="528" y="68" width="136" height="56" rx="8"/><text class="ink b m" x="596" y="92">SOP retrieval</text><text class="qt s m" x="596" y="110">Verified SOPs</text><polygon class="edge" points="516,216 596,180 676,216 596,252"/><text class="ink m" x="596" y="212">SOP supports</text><text class="ink m" x="596" y="229">an answer?</text><rect class="node" x="272" y="188" width="176" height="56" rx="8"/><text class="ink b m" x="360" y="212">Answer from SOP</text><text class="qt s m" x="360" y="230">Then confirm it worked</text><rect class="node main" x="480" y="314" width="232" height="72" rx="8"/><text class="ink b m" x="596" y="334">Warm Handoff</text><text class="ink s m" x="596" y="352">Intent and sentiment pass to</text><text class="ink s m" x="596" y="368">ServiceNow or Genesys</text><text class="qt s m" x="482" y="208">yes</text><text class="qt s" x="608" y="290">no</text><text class="qt s" x="372" y="300">employee still stuck</text></svg></div></figure>
+<p>The three principles act at different points in one path. The Privacy Gate runs before any model sees the call, retrieval limits what the model may say, and the handoff catches everything the SOPs can't answer, along with callers the answer didn't help.</p>
+
+<h2>Key decisions and trade-offs</h2>
+<p>Each choice trades speed or flexibility for control, which is the right trade at a Tier-1 bank.</p>
+<div class="scroll"><table class=""><thead><tr><th scope="col">Decision</th><th scope="col">Chosen</th><th scope="col">Set aside</th><th scope="col">Why</th></tr></thead><tbody><tr><th scope="row">Migration style</th><td>Phased, parallel run</td><td>Big-bang cutover</td><td>Limits the blast radius and builds trust with a visible quick win</td></tr><tr><th scope="row">First flows</th><td>Ranked from transcript clusters</td><td>Menu categories or stakeholder opinion</td><td>Evidence of volume and friction, not assumption</td></tr><tr><th scope="row">Answer source</th><td>RAG over verified SOPs</td><td>Free generation from model knowledge</td><td>Every answer is traceable; no source means no answer</td></tr><tr><th scope="row">Sensitive data</th><td>Mask PII before the LLM</td><td>Send raw transcripts and redact later</td><td>The model never sees raw identifiers</td></tr><tr><th scope="row">Failure mode</th><td>Warm Handoff with context</td><td>Retry loop or blind transfer</td><td>Employees never repeat themselves</td></tr></tbody></table></div>
+
+<h2>Phased migration roadmap</h2>
+<figure><div class="scroll"><svg class="diagram" viewBox="0 0 760 314" role="img" aria-labelledby="road-t"><title id="road-t">Each phase unlocks only when its gate is met</title><defs><marker id="road-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="head" d="M0 0L10 5L0 10z"/></marker></defs><text class="ink b l" x="24" y="34">Each phase unlocks only when its gate is met</text><path class="edge" d="M172 124H182"/><path class="edge" d="M202 124H212" marker-end="url(#road-arrow)"/><path class="edge" d="M360 124H370"/><path class="edge" d="M390 124H400" marker-end="url(#road-arrow)"/><path class="edge" d="M548 124H558"/><path class="edge" d="M578 124H588" marker-end="url(#road-arrow)"/><rect class="node" x="24" y="64" width="148" height="120" rx="8"/><text class="ink b" x="40" y="92">1. Map intents</text><text class="ink s" x="40" y="118">Cluster historical</text><text class="ink s" x="40" y="134">transcripts, rank</text><text class="ink s" x="40" y="150">intents by friction</text><rect class="node main" x="212" y="64" width="148" height="120" rx="8"/><text class="ink b" x="228" y="92">2. Pilot</text><text class="ink s" x="228" y="118">VPN and MFA flows</text><text class="ink s" x="228" y="134">behind guardrails,</text><text class="ink s" x="228" y="150">run beside the IVR</text><rect class="node" x="400" y="64" width="148" height="120" rx="8"/><text class="ink b" x="416" y="92">3. Expand</text><text class="ink s" x="416" y="118">Migrate next ranked</text><text class="ink s" x="416" y="134">intents; long tail</text><text class="ink s" x="416" y="150">stays with agents</text><rect class="node" x="588" y="64" width="148" height="120" rx="8"/><text class="ink b" x="604" y="92">4. Retire IVR</text><text class="ink s" x="604" y="118">Cut over covered</text><text class="ink s" x="604" y="134">flows; retire the</text><text class="ink s" x="604" y="150">legacy menu</text><path class="edge" d="M192 114l10 10l-10 10l-10 -10z"/><path class="edge" d="M192 134V198"/><text class="qt s m" x="192" y="216">Intent map ranked</text><text class="qt s m" x="192" y="232">by volume, friction</text><path class="edge" d="M380 114l10 10l-10 10l-10 -10z"/><path class="edge" d="M380 134V198"/><text class="qt s m" x="380" y="216">Answers trace to SOPs</text><text class="qt s m" x="380" y="232">PII audits clean</text><path class="edge" d="M568 114l10 10l-10 10l-10 -10z"/><path class="edge" d="M568 134V198"/><text class="qt s m" x="568" y="216">Handoff and resolution</text><text class="qt s m" x="568" y="232">signals hold</text><rect class="band" x="24" y="254" width="712" height="40" rx="8"/><text class="ink m" x="380" y="278">Warm Handoff to ServiceNow or Genesys stays live in every phase</text></svg></div></figure>
+<p>The new concierge runs beside the legacy IVR, proves itself on a few high-volume flows, and takes over more only after each gate (the diamonds) is met. Human agents stay in the loop throughout.</p>
+
+<h2>Risks and success measures</h2>
+<p>Each principle answers a specific risk, and each risk has a measurable signal.</p>
+<div class="scroll"><table class=""><thead><tr><th scope="col">Risk</th><th scope="col">Mitigation</th><th scope="col">Signal to watch</th></tr></thead><tbody><tr><th scope="row">Wrong or invented answers</th><td>RAG grounded only in verified SOPs; hand off when no source matches</td><td>Share of answers traceable to an SOP</td></tr><tr><th scope="row">PII exposure to a model</th><td>Privacy Gate masks PII before any LLM call</td><td>Unmasked PII found in audits</td></tr><tr><th scope="row">Employees stuck in AI loops</th><td>Warm Handoff with intent and sentiment</td><td>Repeat-explanation rate at handoff</td></tr><tr><th scope="row">Building the wrong flows first</th><td>Transcript clustering ranks intents by volume and friction</td><td>Share of call volume covered by migrated flows</td></tr><tr><th scope="row">Disruption to live support</th><td>Parallel run beside the legacy IVR; phased cutover</td><td>Resolution time against the IVR baseline</td></tr></tbody></table></div>
+<p>Baselines for each signal come from the same historical transcripts used for intent mapping, so targets can be set before the pilot starts.</p>
+
+<h2>Takeaways for legacy migration at scale</h2>
+<p>Legacy migration in a regulated enterprise succeeds when it earns trust in small, measurable steps. Three lessons carry beyond this case:</p>
+<ol><li><strong>Let the data choose the starting point.</strong> Usage evidence beats assumptions about what users need.</li><li><strong>Design the constraints in, not on.</strong> Grounding and privacy controls are part of the architecture from day one, not a review at the end.</li><li><strong>Keep humans in the loop by design.</strong> A graceful exit to a person protects users when automation falls short and feeds the next improvement.</li></ol>
+
+<h2>What I would validate next</h2>
+<p>This is a proposal, so its claims are design arguments, not measured results. Before a pilot, three things need evidence:</p>
+<ul><li><strong>Cluster quality.</strong> Do the transcript clusters match how experienced agents would group the same calls?</li><li><strong>Grounding coverage.</strong> What share of VPN and MFA calls can the verified SOPs answer without a handoff?</li><li><strong>Handoff value.</strong> Does passing intent and sentiment measurably shorten agent handle time compared with a cold transfer?</li></ul>
+
+</main>
+</body>
+</html>

@@ -1,0 +1,491 @@
+/* ═══════════════════════════════════════════════════════════
+   AUTHENTIC RETRO iOS SPRINGBOARD & MODAL SYSTEM (Light & Dark)
+═══════════════════════════════════════════════════════════ */
+
+:root {
+  /* Light Theme Defaults */
+  --ios-wallpaper-bg: radial-gradient(circle at 50% 15%, #93c5fd 0%, #60a5fa 35%, #3b82f6 70%, #1d4ed8 100%);
+  --ios-sheet-bg: #f1f4f9;
+  --ios-sheet-text: #0f172a;
+  --ios-sheet-text-muted: #64748b;
+  --ios-card-bg: #ffffff;
+  --ios-card-border: rgba(0, 0, 0, 0.08);
+  --ios-card-divide: rgba(0, 0, 0, 0.06);
+  --ios-card-shadow: 0 4px 16px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --ios-input-bg: #ffffff;
+  --ios-input-border: #cbd5e1;
+  --ios-input-text: #0f172a;
+  --ios-nav-gradient: linear-gradient(180deg, #9bb8db 0%, #7da0c7 50%, #6f93be 51%, #557ba8 100%);
+  --ios-dock-shelf-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, rgba(230, 240, 255, 0.65) 15%, rgba(180, 205, 235, 0.75) 100%);
+  --ios-dock-border: rgba(255, 255, 255, 0.95);
+  --ios-home-bar-bg: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.08) 100%);
+  --ios-home-pill-bg: rgba(0, 0, 0, 0.4);
+  --ios-home-text: rgba(0, 0, 0, 0.55);
+}
+
+[data-theme="dark"], html.dark {
+  /* Dark Theme */
+  --ios-wallpaper-bg: radial-gradient(circle at 50% 15%, #2a2d3d 0%, #161822 55%, #0b0d13 100%);
+  --ios-sheet-bg: #12151e;
+  --ios-sheet-text: #ffffff;
+  --ios-sheet-text-muted: rgba(255, 255, 255, 0.6);
+  --ios-card-bg: #1c2130;
+  --ios-card-border: rgba(255, 255, 255, 0.1);
+  --ios-card-divide: rgba(255, 255, 255, 0.08);
+  --ios-card-shadow: 0 6px 22px rgba(0, 0, 0, 0.45);
+  --ios-input-bg: #131722;
+  --ios-input-border: rgba(255, 255, 255, 0.15);
+  --ios-input-text: #ffffff;
+  --ios-nav-gradient: linear-gradient(180deg, #6288b8 0%, #3e6896 50%, #2f547e 51%, #1f3d61 100%);
+  --ios-dock-shelf-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, rgba(200, 215, 230, 0.2) 15%, rgba(80, 95, 115, 0.45) 100%);
+  --ios-dock-border: rgba(255, 255, 255, 0.75);
+  --ios-home-bar-bg: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.6) 100%);
+  --ios-home-pill-bg: rgba(255, 255, 255, 0.7);
+  --ios-home-text: rgba(255, 255, 255, 0.65);
+}
+
+/* 1. Dynamic Wallpaper */
+.ios-clean-wallpaper {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  background: var(--ios-wallpaper-bg);
+  transition: background 0.35s ease;
+  z-index: 0;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.ios-clean-wallpaper::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 35%, rgba(255, 255, 255, 0.12) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+/* 2. Retro Status Bar */
+.ios-status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 22px;
+  padding: 0 12px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.25) 100%);
+  color: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: -0.1px;
+  z-index: 50;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+  flex-shrink: 0;
+}
+
+/* 3. Screen Viewport Container */
+.ios-screen-container {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* 4. 4x4 Grid Area */
+.ios-grid-area {
+  flex: 1;
+  width: 100%;
+  max-width: 360px;
+  margin: 0 auto;
+  padding: 8px 12px 2px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  overflow: hidden;
+}
+
+.ios-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  justify-items: center;
+  align-items: center;
+  width: 100%;
+}
+
+/* 5. App Icon Item */
+.ios-icon-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.1s ease;
+}
+
+.ios-icon-item:active {
+  transform: scale(0.88);
+}
+
+.ios-icon-squircle {
+  position: relative;
+  width: 57px;
+  height: 57px;
+  border-radius: 13px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 
+    0 4px 10px rgba(0, 0, 0, 0.55),
+    0 1px 3px rgba(0, 0, 0, 0.35),
+    inset 0 1px 1px rgba(255, 255, 255, 0.5),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  background-size: cover;
+  background-position: center;
+}
+
+.ios-icon-squircle::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0.3) 45%, rgba(255, 255, 255, 0.05) 50%, transparent 100%);
+  border-top-left-radius: 13px;
+  border-top-right-radius: 13px;
+  clip-path: ellipse(115% 100% at 50% 0%);
+  pointer-events: none;
+  z-index: 4;
+}
+
+.ios-label {
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: #ffffff;
+  text-align: center;
+  max-width: 68px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  letter-spacing: -0.1px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 0 2px rgba(0, 0, 0, 0.9);
+}
+
+.ios-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #ff4141 0%, #c40000 100%);
+  color: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid #ffffff;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+  z-index: 10;
+}
+
+/* 6. Page Dots */
+.ios-page-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 14px;
+  margin-top: 2px;
+  margin-bottom: 2px;
+  z-index: 10;
+}
+
+.ios-page-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  cursor: pointer;
+}
+
+.ios-page-dot--active {
+  width: 7px;
+  height: 7px;
+  background: #ffffff;
+  box-shadow: 0 0 5px rgba(255, 255, 255, 0.9);
+}
+
+/* 7. 3D Glass Shelf Dock */
+.ios-glass-dock {
+  position: relative;
+  width: 100%;
+  padding-bottom: max(16px, env(safe-area-inset-bottom, 16px));
+  z-index: 40;
+  perspective: 400px;
+}
+
+.ios-glass-shelf-plane {
+  position: absolute;
+  bottom: 0;
+  left: 6px;
+  right: 6px;
+  height: 84px;
+  background: var(--ios-dock-shelf-bg);
+  border-top: 1px solid var(--ios-dock-border);
+  border-radius: 14px 14px 0 0;
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    0 -6px 20px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transform: rotateX(24deg);
+  transform-origin: bottom center;
+  transition: background 0.3s ease;
+  z-index: 1;
+}
+
+.ios-dock-icons-row {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  justify-items: center;
+  align-items: center;
+  width: 100%;
+  max-width: 360px;
+  margin: 0 auto;
+  padding-top: 6px;
+}
+
+.ios-dock-reflection {
+  -webkit-box-reflect: below 2px linear-gradient(transparent, transparent 65%, rgba(255, 255, 255, 0.35));
+}
+
+/* ═══════════════════════════════════════════════════════════
+   FULLSCREEN APP SHEET & MODAL STYLES (Light & Dark Adaptive)
+═══════════════════════════════════════════════════════════ */
+
+.ios-app-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  z-index: 900;
+  animation: ios-fade-in 0.2s ease-out forwards;
+}
+
+.ios-app-sheet {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  background: var(--ios-sheet-bg);
+  color: var(--ios-sheet-text);
+  z-index: 950;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+  animation: ios-sheet-slide-up 0.26s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+@keyframes ios-sheet-slide-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0.85;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes ios-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Retro Blue iOS Navigation Bar */
+.ios-nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 48px;
+  padding: 0 12px;
+  background: var(--ios-nav-gradient);
+  border-top: 1px solid rgba(255, 255, 255, 0.45);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.3);
+  color: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35);
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.ios-nav-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffffff;
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.7);
+  text-align: center;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ios-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffffff;
+  background: linear-gradient(180deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.08) 50%, rgba(0,0,0,0.1) 51%, rgba(0,0,0,0.35) 100%);
+  background-color: #2b4c73;
+  border: 1px solid #13273e;
+  border-radius: 6px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 1px 3px rgba(0, 0, 0, 0.35);
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.6);
+  cursor: pointer;
+  transition: filter 0.1s ease, transform 0.08s ease;
+}
+
+.ios-back-btn:active {
+  filter: brightness(0.8);
+  transform: scale(0.96);
+}
+
+/* Bottom Exit Bar for Fast 1-Tap Dismissal */
+.ios-home-indicator-bar {
+  width: 100%;
+  padding: 12px 0 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: var(--ios-home-bar-bg);
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: background 0.25s ease;
+}
+
+.ios-home-pill {
+  width: 130px;
+  height: 5px;
+  border-radius: 100px;
+  background: var(--ios-home-pill-bg);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.ios-home-indicator-bar:active .ios-home-pill {
+  transform: scaleX(1.15) scaleY(1.3);
+  background: #38bdf8;
+}
+
+.ios-home-indicator-text {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--ios-home-text);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Reusable Semantic iOS App Components */
+.ios-card {
+  background: var(--ios-card-bg);
+  border: 1px solid var(--ios-card-border);
+  box-shadow: var(--ios-card-shadow);
+  border-radius: 18px;
+  color: var(--ios-sheet-text);
+  transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+}
+
+.ios-card-divide > * + * {
+  border-top: 1px solid var(--ios-card-divide);
+}
+
+.ios-text-title {
+  color: var(--ios-sheet-text);
+  font-weight: 700;
+}
+
+.ios-text-subtle {
+  color: var(--ios-sheet-text-muted);
+}
+
+.ios-input-field {
+  background: var(--ios-input-bg);
+  border: 1px solid var(--ios-input-border);
+  color: var(--ios-input-text);
+  border-radius: 14px;
+  outline: none;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.ios-input-field:focus {
+  border-color: #0284c7;
+}
+
+/* Retro Toggle Switch for Settings */
+.ios-toggle-track {
+  position: relative;
+  width: 52px;
+  height: 28px;
+  border-radius: 14px;
+  background: #94a3b8;
+  border: 1px solid #64748b;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  transition: background-color 0.25s ease;
+}
+
+[data-theme="dark"] .ios-toggle-track {
+  background: #3f4453;
+  border-color: #232733;
+}
+
+.ios-toggle-track--active {
+  background: #2563eb !important;
+  border-color: #1d4ed8 !important;
+}
+
+.ios-toggle-knob {
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #ffffff 0%, #e2e2e2 100%);
+  border: 1px solid #bbbbbb;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35), inset 0 1px 0 #ffffff;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.ios-toggle-track--active .ios-toggle-knob {
+  transform: translateX(24px);
+}

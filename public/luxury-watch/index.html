@@ -1,0 +1,1062 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chronomètre Atelier — Luxury Watch Display</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #090B0E;
+  --panel: #11151B;
+  --panel-border: rgba(255, 255, 255, 0.08);
+  --text-main: #EDF1F5;
+  --text-muted: #8E9BA8;
+  --gold: #D4AF37;
+  --gold-glow: rgba(212, 175, 55, 0.25);
+  --rose-gold: #E0A98B;
+  --steel: #D6DCE2;
+  --titanium: #9AA4AD;
+  --ceramic: #1A1F26;
+  --font-serif: 'Cinzel', Georgia, serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Background ambient light */
+.ambient-glow {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: 
+    radial-gradient(circle at 50% 35%, rgba(212, 175, 55, 0.04) 0%, transparent 60%),
+    radial-gradient(circle at 80% 20%, rgba(30, 80, 140, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 20% 80%, rgba(224, 169, 139, 0.03) 0%, transparent 50%);
+  z-index: 0;
+}
+
+.app-wrap {
+  position: relative;
+  z-index: 1;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 16px 20px 32px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Header bar */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.brand-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-crest {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gold);
+  font-family: var(--font-serif);
+  font-weight: 700;
+  font-size: 13px;
+  box-shadow: 0 0 12px var(--gold-glow);
+}
+
+.brand-title {
+  font-family: var(--font-serif);
+  font-size: 16px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #F4E8D1;
+  font-weight: 700;
+}
+
+.brand-sub {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-ctrl {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  color: var(--text-main);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.btn-ctrl:hover {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: #171D25;
+}
+
+.btn-ctrl.active {
+  border-color: var(--gold);
+  background: rgba(212, 175, 55, 0.15);
+  color: var(--gold);
+}
+
+/* Main Display Stage */
+.stage-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  gap: 24px;
+  margin-top: 20px;
+  align-items: center;
+  flex: 1;
+}
+
+@media (max-width: 860px) {
+  .stage-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Watch Viewport */
+.watch-viewport {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: radial-gradient(circle at 50% 50%, #151B22 0%, #0D1015 100%);
+  border-radius: 24px;
+  border: 1px solid var(--panel-border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 20px 50px rgba(0, 0, 0, 0.5);
+  min-height: 480px;
+  overflow: hidden;
+  perspective: 1000px;
+}
+
+/* 3D tilt stage */
+.watch-tilt-stage {
+  position: relative;
+  width: 360px;
+  height: 360px;
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.12s cubic-bezier(0.2, 0, 0.2, 1);
+  transform-style: preserve-3d;
+}
+
+/* Glass Glare Overlay */
+.glass-glare {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.05) 30%, transparent 60%);
+  mix-blend-mode: overlay;
+  z-index: 50;
+  opacity: 0.7;
+  transition: opacity 0.3s;
+}
+
+/* Lume mode dark overlay */
+body.lume-active .watch-viewport {
+  background: radial-gradient(circle at 50% 50%, #03080A 0%, #010405 100%);
+}
+
+body.lume-active .glass-glare {
+  opacity: 0.15;
+}
+
+/* Watch SVG Component */
+.watch-svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 18px 30px rgba(0, 0, 0, 0.65));
+}
+
+/* Watch Controls bar */
+.chrono-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 18px;
+  z-index: 10;
+}
+
+.chrono-pill {
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--panel-border);
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chrono-pill .pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #34D399;
+  animation: pulse 1.6s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+/* Inspector & Configurator Panel */
+.config-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 24px;
+  padding: 24px 28px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.config-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.config-ref {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--gold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.config-title {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  letter-spacing: 0.04em;
+  color: #FFF;
+}
+
+.config-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* Option Groups */
+.opt-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.opt-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  display: flex;
+  justify-content: space-between;
+}
+
+.opt-selected-name {
+  color: var(--text-main);
+}
+
+.opt-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.opt-chip {
+  flex: 1;
+  min-width: 80px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--panel-border);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  transition: all 0.2s ease;
+  color: var(--text-main);
+  text-align: left;
+}
+
+.opt-chip:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.opt-chip.active {
+  background: rgba(212, 175, 55, 0.12);
+  border-color: var(--gold);
+}
+
+.chip-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  margin-bottom: 2px;
+}
+
+.chip-name {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.chip-sub {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+/* Specs Grid */
+.specs-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--panel-border);
+}
+
+.spec-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.spec-num {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.spec-lbl {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+/* Interactive Horological Complications (Lume styles) */
+.lume-elem {
+  transition: fill 0.4s ease, filter 0.4s ease, stroke 0.4s ease;
+}
+
+body.lume-active .lume-elem {
+  fill: #4EFAFF !important;
+  stroke: #4EFAFF !important;
+  filter: drop-shadow(0 0 6px rgba(78, 250, 255, 0.95)) drop-shadow(0 0 14px rgba(78, 250, 255, 0.5));
+}
+
+body.lume-active .lume-marker {
+  fill: #34D399 !important;
+  stroke: #34D399 !important;
+  filter: drop-shadow(0 0 8px rgba(52, 211, 153, 0.95)) drop-shadow(0 0 16px rgba(52, 211, 153, 0.6));
+}
+
+body.lume-active .dial-bg {
+  fill: #02070A !important;
+}
+
+body.lume-active .dial-details {
+  opacity: 0.15;
+}
+
+/* Responsive compact adjustments for embedded previews */
+@media (max-height: 520px), (max-width: 640px) {
+  .app-wrap { padding: 10px 14px 18px; }
+  header { padding-bottom: 10px; }
+  .brand-title { font-size: 14px; }
+  .stage-grid { gap: 14px; margin-top: 12px; }
+  .watch-viewport { min-height: 320px; padding: 12px 8px; }
+  .watch-tilt-stage { width: 280px; height: 280px; }
+  .config-panel { padding: 16px 18px; gap: 14px; }
+  .config-title { font-size: 18px; }
+}
+</style>
+</head>
+<body>
+
+<div class="ambient-glow"></div>
+
+<div class="app-wrap">
+  <header>
+    <div class="brand-badge">
+      <div class="brand-crest">CA</div>
+      <div>
+        <div class="brand-title">Chronomètre Atelier</div>
+        <div class="brand-sub">Geneva Haute Horlogerie · Reference 1839</div>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <button type="button" id="btnSound" class="btn-ctrl" title="Toggle mechanical escapement tick audio">
+        <span id="soundIcon">🔇</span>
+        <span>Sound</span>
+      </button>
+
+      <button type="button" id="btnLume" class="btn-ctrl" title="Toggle Super-LumiNova darkness inspection">
+        <span>🌙</span>
+        <span>Lume</span>
+      </button>
+
+      <button type="button" id="btnChrono" class="btn-ctrl" title="Start / Stop flyback chronograph complication">
+        <span>⏱</span>
+        <span>Chronograph</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="stage-grid">
+    <!-- Watch Viewport Stage -->
+    <div class="watch-viewport" id="viewport">
+      <div class="watch-tilt-stage" id="tiltStage">
+        <div class="glass-glare" id="glare"></div>
+
+        <!-- SVG Mechanical Watch Engine -->
+        <svg class="watch-svg" viewBox="0 0 400 400" id="watchSvg">
+          <defs>
+            <!-- Case Gradients -->
+            <linearGradient id="roseGoldCase" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#EED5C2" />
+              <stop offset="35%" stop-color="#DDA07A" />
+              <stop offset="65%" stop-color="#C2825B" />
+              <stop offset="100%" stop-color="#F2DFD3" />
+            </linearGradient>
+
+            <linearGradient id="titaniumCase" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#C8CFD6" />
+              <stop offset="45%" stop-color="#939DA5" />
+              <stop offset="75%" stop-color="#768087" />
+              <stop offset="100%" stop-color="#B2B9BF" />
+            </linearGradient>
+
+            <linearGradient id="ceramicCase" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#343C45" />
+              <stop offset="40%" stop-color="#1B2026" />
+              <stop offset="70%" stop-color="#0E1216" />
+              <stop offset="100%" stop-color="#283038" />
+            </linearGradient>
+
+            <linearGradient id="platinumCase" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#FFFFFF" />
+              <stop offset="30%" stop-color="#DDE2E7" />
+              <stop offset="70%" stop-color="#AEB6BF" />
+              <stop offset="100%" stop-color="#F0F3F6" />
+            </linearGradient>
+
+            <!-- Dial Gradients -->
+            <radialGradient id="enamelNavyDial" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#14283D" />
+              <stop offset="70%" stop-color="#091422" />
+              <stop offset="100%" stop-color="#04090F" />
+            </radialGradient>
+
+            <radialGradient id="anthraciteDial" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#2D3339" />
+              <stop offset="75%" stop-color="#171A1E" />
+              <stop offset="100%" stop-color="#0E1013" />
+            </radialGradient>
+
+            <radialGradient id="opalineDial" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#F7F5F0" />
+              <stop offset="80%" stop-color="#EBE7DE" />
+              <stop offset="100%" stop-color="#D9D4C7" />
+            </radialGradient>
+
+            <!-- Strap Texture Gradients -->
+            <linearGradient id="alligatorStrap" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#2C1D11" />
+              <stop offset="50%" stop-color="#4A3320" />
+              <stop offset="100%" stop-color="#22160C" />
+            </linearGradient>
+
+            <linearGradient id="rubberStrap" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#1E2328" />
+              <stop offset="50%" stop-color="#2C333C" />
+              <stop offset="100%" stop-color="#14181C" />
+            </linearGradient>
+
+            <!-- Bevel Shadow -->
+            <filter id="caseShadow" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#000" flood-opacity="0.6" />
+            </filter>
+
+            <!-- Subtle Metallic Sheen Filter -->
+            <filter id="dialLuster">
+              <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="3" result="noise" />
+              <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.04 0" />
+              <feComposite in2="SourceGraphic" in="gl" operator="in" />
+            </filter>
+          </defs>
+
+          <!-- Top and Bottom Straps -->
+          <g id="strapLayer">
+            <!-- Top Strap -->
+            <path id="topStrap" d="M150,0 L250,0 L242,90 L158,90 Z" fill="url(#alligatorStrap)" />
+            <!-- Bottom Strap -->
+            <path id="bottomStrap" d="M158,310 L242,310 L250,400 L150,400 Z" fill="url(#alligatorStrap)" />
+            <!-- Strap stitching lines -->
+            <path d="M162,5 L162,85 M238,5 L238,85" stroke="rgba(255,255,255,0.18)" stroke-width="1.5" stroke-dasharray="3,3" />
+            <path d="M162,315 L162,395 M238,315 L238,395" stroke="rgba(255,255,255,0.18)" stroke-width="1.5" stroke-dasharray="3,3" />
+          </g>
+
+          <!-- Chronograph Pushers and Crown -->
+          <!-- 2 o'clock Pusher -->
+          <rect id="pusherTop" x="312" y="112" width="16" height="22" rx="3" fill="url(#roseGoldCase)" transform="rotate(28 320 123)" stroke="#111" stroke-width="1" />
+          <!-- 3 o'clock Winding Crown -->
+          <path id="crown" d="M336,188 L348,185 L348,215 L336,212 Z" fill="url(#roseGoldCase)" stroke="#111" stroke-width="1.5" />
+          <line x1="344" y1="187" x2="344" y2="213" stroke="rgba(0,0,0,0.4)" stroke-width="1.5" />
+          <!-- 4 o'clock Pusher -->
+          <rect id="pusherBottom" x="312" y="266" width="16" height="22" rx="3" fill="url(#roseGoldCase)" transform="rotate(-28 320 277)" stroke="#111" stroke-width="1" />
+
+          <!-- Main Watch Outer Case -->
+          <circle id="caseOuter" cx="200" cy="200" r="148" fill="url(#roseGoldCase)" filter="url(#caseShadow)" />
+          <!-- Stepped Bezel -->
+          <circle id="caseBezelInner" cx="200" cy="200" r="134" fill="none" stroke="rgba(0,0,0,0.3)" stroke-width="3" />
+          <circle cx="200" cy="200" r="132" fill="#0A0C0E" />
+
+          <!-- Dial Surface -->
+          <circle id="dialSurface" class="dial-bg" cx="200" cy="200" r="130" fill="url(#enamelNavyDial)" />
+
+          <!-- Guilloché Rosette Pattern (Opaline / Decorative) -->
+          <g id="guillochePattern" opacity="0.12">
+            <circle cx="200" cy="200" r="115" fill="none" stroke="#D4AF37" stroke-width="0.7" stroke-dasharray="2,4" />
+            <circle cx="200" cy="200" r="95" fill="none" stroke="#D4AF37" stroke-width="0.7" stroke-dasharray="1.5,3" />
+            <circle cx="200" cy="200" r="75" fill="none" stroke="#D4AF37" stroke-width="0.7" stroke-dasharray="1,2" />
+          </g>
+
+          <!-- Skeleton Gear Assembly (Visible in Skeleton mode) -->
+          <g id="skeletonGears" style="display: none;" opacity="0.85">
+            <!-- Balance wheel ring -->
+            <circle cx="200" cy="245" r="28" fill="none" stroke="#E5A65D" stroke-width="2.5" />
+            <g id="balanceWheelOscillator">
+              <line x1="172" y1="245" x2="228" y2="245" stroke="#E5A65D" stroke-width="2" />
+              <line x1="200" y1="217" x2="200" y2="273" stroke="#E5A65D" stroke-width="2" />
+              <!-- Ruby Jewel in centre -->
+              <circle cx="200" cy="245" r="4.5" fill="#C70039" stroke="#E5A65D" stroke-width="1" />
+            </g>
+            <!-- Escapement gear -->
+            <circle cx="160" cy="210" r="18" fill="none" stroke="#B87333" stroke-width="2" stroke-dasharray="4,2" />
+            <circle cx="160" cy="210" r="3" fill="#C70039" />
+          </g>
+
+          <!-- Dial Complication: Moonphase Subdial at 6 o'clock -->
+          <g id="moonphaseComplication" class="dial-details">
+            <!-- Subdial rim -->
+            <circle cx="200" cy="260" r="30" fill="#060C14" stroke="rgba(212,175,55,0.4)" stroke-width="1" />
+            <!-- Starry sky -->
+            <circle cx="188" cy="254" r="0.8" fill="#FFF" />
+            <circle cx="212" cy="252" r="0.8" fill="#FFF" />
+            <circle cx="195" cy="248" r="0.8" fill="#FFF" />
+            <!-- Golden Moon -->
+            <circle id="moonDisk" cx="200" cy="256" r="10" fill="#D4AF37" />
+            <!-- Semi-aperture mask -->
+            <path d="M170,260 Q200,280 230,260 A30,30 0 0,1 170,260 Z" fill="#0A0C0E" />
+            <text x="200" y="286" text-anchor="middle" font-family="var(--font-mono)" font-size="6.5" fill="var(--text-muted)" letter-spacing="1">LUNAR</text>
+          </g>
+
+          <!-- Dial Complication: 30-Minute Chronograph Register at 9 o'clock -->
+          <g id="chronoSubdial" class="dial-details">
+            <circle cx="140" cy="200" r="24" fill="none" stroke="rgba(212,175,55,0.3)" stroke-width="1" />
+            <text x="140" y="186" text-anchor="middle" font-family="var(--font-mono)" font-size="6" fill="#D4AF37">30</text>
+            <text x="156" y="202" text-anchor="middle" font-family="var(--font-mono)" font-size="6" fill="var(--text-muted)">10</text>
+            <text x="124" y="202" text-anchor="middle" font-family="var(--font-mono)" font-size="6" fill="var(--text-muted)">20</text>
+            <!-- Subdial hand -->
+            <g id="chronoSubHand">
+              <line x1="140" y1="200" x2="140" y2="182" stroke="#E5A65D" stroke-width="1.2" stroke-linecap="round" />
+              <circle cx="140" cy="200" r="2" fill="#E5A65D" />
+            </g>
+          </g>
+
+          <!-- Date Aperture at 3 o'clock -->
+          <g id="dateWindow" class="dial-details">
+            <rect x="252" y="190" width="22" height="18" rx="2" fill="#0A0C0E" stroke="rgba(212,175,55,0.6)" stroke-width="1" />
+            <text id="dateText" x="263" y="203" text-anchor="middle" font-family="var(--font-mono)" font-size="10" font-weight="600" fill="#EDF1F5">11</text>
+          </g>
+
+          <!-- Brand Logo on Dial (12 o'clock) -->
+          <g class="dial-details">
+            <text x="200" y="145" text-anchor="middle" font-family="var(--font-serif)" font-size="10" font-weight="700" fill="#EAD7B5" letter-spacing="2">CHRONOMÈTRE</text>
+            <text x="200" y="155" text-anchor="middle" font-family="var(--font-sans)" font-size="6" font-weight="600" fill="var(--text-muted)" letter-spacing="1.5">GENÈVE · AUTOMATIQUE</text>
+            <text x="200" y="322" text-anchor="middle" font-family="var(--font-mono)" font-size="5" fill="var(--text-muted)" letter-spacing="1">SWISS MADE</text>
+          </g>
+
+          <!-- Outer Minute Track and 12 Hour Applied Indices -->
+          <g id="hourIndices">
+            <!-- 12 Hours (Generated programmatically & styled) -->
+            <!-- 12 --> <rect class="lume-marker" x="198" y="80" width="4" height="14" rx="1" fill="#E5A65D" />
+            <!-- 1 -->  <rect class="lume-marker" x="253" y="96" width="3" height="12" rx="1" fill="#E5A65D" transform="rotate(30 254 102)" />
+            <!-- 2 -->  <rect class="lume-marker" x="296" y="139" width="3" height="12" rx="1" fill="#E5A65D" transform="rotate(60 297 145)" />
+            <!-- 3 (Short for date) --> <rect class="lume-marker" x="312" y="198" width="8" height="3" rx="1" fill="#E5A65D" />
+            <!-- 4 -->  <rect class="lume-marker" x="296" y="257" width="3" height="12" rx="1" fill="#E5A65D" transform="rotate(120 297 263)" />
+            <!-- 5 -->  <rect class="lume-marker" x="253" y="300" width="3" height="12" rx="1" fill="#E5A65D" transform="rotate(150 254 306)" />
+            <!-- 6 -->  <rect class="lume-marker" x="198" y="316" width="4" height="10" rx="1" fill="#E5A65D" />
+            <!-- 7 -->  <rect class="lume-marker" x="143" y="300" width="3" height="12" rx="1" fill="#E5A65D" transform="rotate(210 144 306)" />
+            <!-- 8 -->  <rect class="lume-marker" x="100" y="257" width="3" height="12" rx="1" fill="#E5A65D" transform="rotate(240 101 263)" />
+            <!-- 9 -->  <rect class="lume-marker" x="84" y="198" width="10" height="3" rx="1" fill="#E5A65D" />
+            <!-- 10 --> <rect class="lume-marker" x="100" y="139" width="3" height="12" rx="1" fill="#E5A65D" transform="rotate(300 101 145)" />
+            <!-- 11 --> <rect class="lume-marker" x="143" y="96" width="3" height="12" rx="1" fill="#E5A65D" transform="rotate(330 144 102)" />
+          </g>
+
+          <!-- Central Hands Assembly -->
+          <!-- Hour Hand -->
+          <g id="hourHandGroup">
+            <path class="lume-elem" d="M198,200 L196,132 L200,122 L204,132 L202,200 Z" fill="#E0A98B" stroke="#7A4E38" stroke-width="0.8" />
+            <rect class="lume-elem" x="198.5" y="134" width="3" height="35" rx="1.5" fill="#FFF" />
+          </g>
+
+          <!-- Minute Hand -->
+          <g id="minuteHandGroup">
+            <path class="lume-elem" d="M198,200 L196,96 L200,82 L204,96 L202,200 Z" fill="#E0A98B" stroke="#7A4E38" stroke-width="0.8" />
+            <rect class="lume-elem" x="198.5" y="98" width="3" height="60" rx="1.5" fill="#FFF" />
+          </g>
+
+          <!-- Chronograph / Smooth Seconds Hand -->
+          <g id="secondHandGroup">
+            <!-- Counterbalance and needle -->
+            <line x1="200" y1="230" x2="200" y2="76" stroke="#C53030" stroke-width="1.2" stroke-linecap="round" />
+            <!-- Counterbalance circle -->
+            <circle cx="200" cy="222" r="3.5" fill="#C53030" />
+            <!-- Arrow tip -->
+            <polygon points="198,78 202,78 200,72" fill="#C53030" />
+          </g>
+
+          <!-- Central Pin Cap -->
+          <circle cx="200" cy="200" r="5" fill="#C53030" stroke="#7A4E38" stroke-width="1" />
+          <circle cx="200" cy="200" r="2" fill="#E0A98B" />
+        </svg>
+      </div>
+
+      <!-- Live Telemetry Bar below watch -->
+      <div class="chrono-toolbar">
+        <div class="chrono-pill">
+          <span class="pulse-dot"></span>
+          <span id="hzRate">28,800 VPH · 4Hz</span>
+        </div>
+        <div class="chrono-pill">
+          <span id="lunarPhase">Waxing Gibbous · Day 12</span>
+        </div>
+        <div class="chrono-pill">
+          <span id="localClock">10:10:32 AM</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Atelier Configuration Panel -->
+    <div class="config-panel">
+      <div class="config-head">
+        <span class="config-ref">Haute Horlogerie · Customizer</span>
+        <h2 class="config-title" id="displayModelName">Chronomètre 18K Rose Gold</h2>
+        <p class="config-desc" id="displayModelDesc">
+          Crafted with 18-karat rose gold, grand feu royal blue enamel dial, and an integrated column-wheel flyback chronograph complication.
+        </p>
+      </div>
+
+      <!-- 1. Case Material Option -->
+      <div class="opt-group">
+        <div class="opt-label">
+          <span>Case Material</span>
+          <span class="opt-selected-name" id="selectedCaseLabel">18K Rose Gold</span>
+        </div>
+        <div class="opt-chips">
+          <button type="button" class="opt-chip active" data-type="case" data-val="rosegold">
+            <div class="chip-swatch" style="background: #E0A98B;"></div>
+            <div class="chip-name">Rose Gold</div>
+            <div class="chip-sub">18-Karat</div>
+          </button>
+          <button type="button" class="opt-chip" data-type="case" data-val="titanium">
+            <div class="chip-swatch" style="background: #9AA4AD;"></div>
+            <div class="chip-name">Titanium</div>
+            <div class="chip-sub">Grade 5</div>
+          </button>
+          <button type="button" class="opt-chip" data-type="case" data-val="ceramic">
+            <div class="chip-swatch" style="background: #1B2026;"></div>
+            <div class="chip-name">Ceramic</div>
+            <div class="chip-sub">Noir DLC</div>
+          </button>
+          <button type="button" class="opt-chip" data-type="case" data-val="platinum">
+            <div class="chip-swatch" style="background: #E8ECEF;"></div>
+            <div class="chip-name">Platinum</div>
+            <div class="chip-sub">Pt 950</div>
+          </button>
+        </div>
+      </div>
+
+      <!-- 2. Dial Style Option -->
+      <div class="opt-group">
+        <div class="opt-label">
+          <span>Dial Architecture</span>
+          <span class="opt-selected-name" id="selectedDialLabel">Grand Feu Navy</span>
+        </div>
+        <div class="opt-chips">
+          <button type="button" class="opt-chip active" data-type="dial" data-val="navy">
+            <div class="chip-swatch" style="background: #10243C;"></div>
+            <div class="chip-name">Enamel Navy</div>
+            <div class="chip-sub">Grand Feu</div>
+          </button>
+          <button type="button" class="opt-chip" data-type="dial" data-val="anthracite">
+            <div class="chip-swatch" style="background: #252A2E;"></div>
+            <div class="chip-name">Anthracite</div>
+            <div class="chip-sub">Sunburst</div>
+          </button>
+          <button type="button" class="opt-chip" data-type="dial" data-val="opaline">
+            <div class="chip-swatch" style="background: #F0EAD6;"></div>
+            <div class="chip-name">Opaline</div>
+            <div class="chip-sub">Guilloché</div>
+          </button>
+          <button type="button" class="opt-chip" data-type="dial" data-val="skeleton">
+            <div class="chip-swatch" style="background: #E5A65D;"></div>
+            <div class="chip-name">Skeleton</div>
+            <div class="chip-sub">Tourbillon</div>
+          </button>
+        </div>
+      </div>
+
+      <!-- 3. Strap Style Option -->
+      <div class="opt-group">
+        <div class="opt-label">
+          <span>Strap & Bracelet</span>
+          <span class="opt-selected-name" id="selectedStrapLabel">Cognac Alligator</span>
+        </div>
+        <div class="opt-chips">
+          <button type="button" class="opt-chip active" data-type="strap" data-val="alligator">
+            <div class="chip-swatch" style="background: #3B2414;"></div>
+            <div class="chip-name">Alligator</div>
+            <div class="chip-sub">Cognac</div>
+          </button>
+          <button type="button" class="opt-chip" data-type="strap" data-val="rubber">
+            <div class="chip-swatch" style="background: #1E2328;"></div>
+            <div class="chip-name">FKM Rubber</div>
+            <div class="chip-sub">Midnight</div>
+          </button>
+          <button type="button" class="opt-chip" data-type="strap" data-val="metal">
+            <div class="chip-swatch" style="background: #AAB3BA;"></div>
+            <div class="chip-name">Metal Link</div>
+            <div class="chip-sub">Satin Brushes</div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Calibre Specs -->
+      <div class="specs-row">
+        <div class="spec-item">
+          <span class="spec-num">Cal. 8940</span>
+          <span class="spec-lbl">Manufacture</span>
+        </div>
+        <div class="spec-item">
+          <span class="spec-num">72 Hours</span>
+          <span class="spec-lbl">Power Reserve</span>
+        </div>
+        <div class="spec-item">
+          <span class="spec-num">100 Meters</span>
+          <span class="spec-lbl">Water Resistance</span>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+// --- Horological Clock Engine & Audio Synthesizer ---
+let currentConfig = {
+  case: 'rosegold',
+  dial: 'navy',
+  strap: 'alligator',
+  sound: false,
+  lume: false,
+  chronoRunning: false,
+  chronoElapsedSec: 0
+};
+
+// Web Audio API Tick Synthesizer
+let audioCtx = null;
+function playTick() {
+  if (!currentConfig.sound) return;
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(1400, now);
+    osc.frequency.exponentialRampToValueAtTime(180, now + 0.015);
+    
+    gain.gain.setValueAtTime(0.04, now);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.018);
+    
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    
+    osc.start(now);
+    osc.stop(now + 0.02);
+  } catch (e) {}
+}
+
+// Balance wheel oscillation animation state
+let oscAngle = 0;
+let lastTickTime = 0;
+
+// Main RequestAnimationFrame 60fps Loop
+function updateClock() {
+  const now = new Date();
+  const ms = now.getMilliseconds();
+  const sec = now.getSeconds() + ms / 1000;
+  const min = now.getMinutes() + sec / 60;
+  const hr = (now.getHours() % 12) + min / 60;
+
+  // Check 4Hz mechanical tick audio (every 250ms)
+  const currentTimestamp = performance.now();
+  if (currentTimestamp - lastTickTime >= 250) {
+    lastTickTime = currentTimestamp;
+    playTick();
+  }
+
+  // Rotate Hands
+  const hrDeg = hr * 30; // 360 / 12
+  const minDeg = min * 6; // 360 / 60
+  const secDeg = sec * 6; // 360 / 60
+
+  const hourHand = document.getElementById('hourHandGroup');
+  const minHand = document.getElementById('minuteHandGroup');
+  const secHand = document.getElementById('secondHandGroup');
+  const chronoSubHand = document.getElementById('chronoSubHand');
+  const balanceWheel = document.getElementById('balanceWheelOscillator');
+
+  if (hourHand) hourHand.setAttribute('transform', `rotate(${hrDeg} 200 200)`);
+  if (minHand) minHand.setAttribute('transform', `rotate(${minDeg} 200 200)`);
+
+  // Chronograph vs Live seconds
+  if (currentConfig.chronoRunning) {
+    currentConfig.chronoElapsedSec += 1 / 60;
+    const chronoSecDeg = (currentConfig.chronoElapsedSec % 60) * 6;
+    const chronoMinDeg = (currentConfig.chronoElapsedSec / 60) * 12;
+    if (secHand) secHand.setAttribute('transform', `rotate(${chronoSecDeg} 200 200)`);
+    if (chronoSubHand) chronoSubHand.setAttribute('transform', `rotate(${chronoMinDeg} 140 200)`);
+  } else {
+    if (secHand) secHand.setAttribute('transform', `rotate(${secDeg} 200 200)`);
+  }
+
+  // Skeleton balance wheel oscillation
+  oscAngle = Math.sin(performance.now() * 0.025) * 35;
+  if (balanceWheel) balanceWheel.setAttribute('transform', `rotate(${oscAngle} 200 245)`);
+
+  // Update clock digital label
+  const clockLabel = document.getElementById('localClock');
+  if (clockLabel) {
+    clockLabel.textContent = now.toLocaleTimeString();
+  }
+
+  // Date
+  const dateText = document.getElementById('dateText');
+  if (dateText) {
+    dateText.textContent = now.getDate();
+  }
+
+  requestAnimationFrame(updateClock);
+}
+
+// 3D Tilt and Glare Cursor Movement
+const stage = document.getElementById('tiltStage');
+const viewport = document.getElementById('viewport');
+const glare = document.getElementById('glare');
+
+if (viewport && stage) {
+  viewport.addEventListener('mousemove', (e) => {
+    const rect = viewport.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+
+    const tiltX = -y * 18;
+    const tiltY = x * 18;
+
+    stage.style.transform = `rotateX(${tiltX}deg) rotateY(${tiltY}deg)`;
+    if (glare) {
+      const angle = 135 + x * 40;
+      glare.style.background = `linear-gradient(${angle}deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.05) 35%, transparent 70%)`;
+    }
+  });
+
+  viewport.addEventListener('mouseleave', () => {
+    stage.style.transform = `rotateX(0deg) rotateY(0deg)`;
+  });
+}
+
+// Configuration handlers
+function applyConfiguration() {
+  const caseOuter = document.getElementById('caseOuter');
+  const pusherTop = document.getElementById('pusherTop');
+  const pusherBottom = document.getElementById('pusherBottom');
+  const crown = document.getElementById('crown');
+  const dialSurface = document.getElementById('dialSurface');
+  const skeletonGears = document.getElementById('skeletonGears');
+  const guilloche = document.getElementById('guillochePattern');
+  const topStrap = document.getElementById('topStrap');
+  const bottomStrap = document.getElementById('bottomStrap');
+
+  // Case Material
+  const caseGradients = {
+    rosegold: 'url(#roseGoldCase)',
+    titanium: 'url(#titaniumCase)',
+    ceramic: 'url(#ceramicCase)',
+    platinum: 'url(#platinumCase)'
+  };
+  const caseGrad = caseGradients[currentConfig.case];
+  if (caseOuter) caseOuter.setAttribute('fill', caseGrad);
+  if (pusherTop) pusherTop.setAttribute('fill', caseGrad);
+  if (pusherBottom) pusherBottom.setAttribute('fill', caseGrad);
+  if (crown) crown.setAttribute('fill', caseGrad);
+
+  // Dial Style
+  const dialGradients = {
+    navy: 'url(#enamelNavyDial)',
+    anthracite: 'url(#anthraciteDial)',
+    opaline: 'url(#opalineDial)',
+    skeleton: 'url(#anthraciteDial)'
+  };
+  if (dialSurface) dialSurface.setAttribute('fill', dialGradients[currentConfig.dial]);
+
+  if (skeletonGears) {
+    skeletonGears.style.display = currentConfig.dial === 'skeleton' ? 'block' : 'none';
+  }
+  if (guilloche) {
+    guilloche.style.opacity = currentConfig.dial === 'opaline' ? '0.35' : '0.12';
+  }
+
+  // Strap
+  const strapFills = {
+    alligator: 'url(#alligatorStrap)',
+    rubber: 'url(#rubberStrap)',
+    metal: caseGrad
+  };
+  const strapFill = strapFills[currentConfig.strap];
+  if (topStrap) topStrap.setAttribute('fill', strapFill);
+  if (bottomStrap) bottomStrap.setAttribute('fill', strapFill);
+
+  // Model Name Label updates
+  const caseNames = { rosegold: '18K Rose Gold', titanium: 'Titanium Grade 5', ceramic: 'Ceramic Noir', platinum: 'Platinum 950' };
+  const dialNames = { navy: 'Grand Feu Royal Blue', anthracite: 'Sunburst Anthracite', opaline: 'Guilloché Opaline', skeleton: 'Tourbillon Skeleton' };
+  const strapNames = { alligator: 'Cognac Alligator', rubber: 'Midnight FKM Rubber', metal: 'Matching Solid Bracelet' };
+
+  const modelTitle = document.getElementById('displayModelName');
+  if (modelTitle) modelTitle.textContent = `Chronomètre ${caseNames[currentConfig.case]}`;
+
+  const selectedCaseLabel = document.getElementById('selectedCaseLabel');
+  if (selectedCaseLabel) selectedCaseLabel.textContent = caseNames[currentConfig.case];
+
+  const selectedDialLabel = document.getElementById('selectedDialLabel');
+  if (selectedDialLabel) selectedDialLabel.textContent = dialNames[currentConfig.dial];
+
+  const selectedStrapLabel = document.getElementById('selectedStrapLabel');
+  if (selectedStrapLabel) selectedStrapLabel.textContent = strapNames[currentConfig.strap];
+}
+
+// Option chip clicks
+document.querySelectorAll('.opt-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    const type = chip.getAttribute('data-type');
+    const val = chip.getAttribute('data-val');
+    chip.parentElement.querySelectorAll('.opt-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    currentConfig[type] = val;
+    applyConfiguration();
+  });
+});
+
+// Top bar controls
+const btnSound = document.getElementById('btnSound');
+if (btnSound) {
+  btnSound.addEventListener('click', () => {
+    currentConfig.sound = !currentConfig.sound;
+    btnSound.classList.toggle('active', currentConfig.sound);
+    document.getElementById('soundIcon').textContent = currentConfig.sound ? '🔊' : '🔇';
+    if (currentConfig.sound && !audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+  });
+}
+
+const btnLume = document.getElementById('btnLume');
+if (btnLume) {
+  btnLume.addEventListener('click', () => {
+    currentConfig.lume = !currentConfig.lume;
+    document.body.classList.toggle('lume-active', currentConfig.lume);
+    btnLume.classList.toggle('active', currentConfig.lume);
+  });
+}
+
+const btnChrono = document.getElementById('btnChrono');
+if (btnChrono) {
+  btnChrono.addEventListener('click', () => {
+    currentConfig.chronoRunning = !currentConfig.chronoRunning;
+    btnChrono.classList.toggle('active', currentConfig.chronoRunning);
+    if (!currentConfig.chronoRunning) {
+      currentConfig.chronoElapsedSec = 0;
+    }
+  });
+}
+
+// Start 60fps clock engine
+updateClock();
+applyConfiguration();
+</script>
+</body>
+</html>

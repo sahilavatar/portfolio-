@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="A scripted voice-concierge call demo showing PII masking, SOP-grounded answers and a warm handoff.">
+<title>Agentic Voice Concierge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,600&display=swap">
+<style>
+/* Layout: call transcript on the left, the pipeline that handled it on the right, so every claim in the case study is visible as it happens. */
+:root {
+  --bg: #F2F5F8;
+  --surface: #FFFFFF;
+  --surface-2: #E9EFF4;
+  --ink: #13202B;
+  --muted: #58697A;
+  --line: #D5DEE6;
+  --accent: #0B5FA5;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #E1EEF9;
+  --good: #1C7A4B;
+  --good-soft: #DFF2E7;
+  --warn: #8F5400;
+  --warn-soft: #FBEBCF;
+  --crit: #B3261E;
+  --crit-soft: #F9E0DD;
+  --display: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  --body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not(.light) {
+    --bg: #0D141A;
+    --surface: #141E27;
+    --surface-2: #1B2733;
+    --ink: #E4ECF2;
+    --muted: #8FA2B3;
+    --line: #26343F;
+    --accent: #62AEEA;
+    --accent-ink: #0B1620;
+    --accent-soft: #14304A;
+    --good: #5CC38A;
+    --good-soft: #153526;
+    --warn: #E0A44A;
+    --warn-soft: #3A2B10;
+    --crit: #F08A80;
+    --crit-soft: #3D1B18;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"], :root.dark {
+  --bg: #0D141A;
+  --surface: #141E27;
+  --surface-2: #1B2733;
+  --ink: #E4ECF2;
+  --muted: #8FA2B3;
+  --line: #26343F;
+  --accent: #62AEEA;
+  --accent-ink: #0B1620;
+  --accent-soft: #14304A;
+  --good: #5CC38A;
+  --good-soft: #153526;
+  --warn: #E0A44A;
+  --warn-soft: #3A2B10;
+  --crit: #F08A80;
+  --crit-soft: #3D1B18;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 15px;
+  line-height: 1.5;
+}
+.wrap { max-width: 1120px; margin: 0 auto; padding-inline: 16px; padding-block: 28px 44px; }
+h1 { font-family: var(--display); font-weight: 600; font-size: clamp(26px, 4vw, 34px); line-height: 1.15; margin: 0; text-wrap: balance; }
+.lede { margin: 8px 0 0; color: var(--muted); max-width: 62ch; }
+.bar { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: center; justify-content: space-between; margin-block: 22px 16px; }
+.tabs, .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+button { font: inherit; cursor: pointer; }
+.tab, .ghost {
+  background: var(--surface); color: var(--ink); border: 1px solid var(--line);
+  border-radius: 8px; padding: 8px 14px; min-height: 40px;
+}
+.tab[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--ink); font-weight: 500; }
+.go { background: var(--accent); color: var(--accent-ink); border: 1px solid var(--accent); border-radius: 8px; padding: 8px 18px; min-height: 40px; font-weight: 600; }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 16px; align-items: start; }
+@media (max-width: 860px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; min-width: 0; }
+.panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.panel-head h2 { margin: 0; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.status { display: inline-flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.wave { display: inline-flex; align-items: center; gap: 2px; height: 14px; }
+.wave i { display: block; width: 3px; height: 4px; border-radius: 2px; background: var(--muted); }
+.status.live .wave i { background: var(--accent); animation: bar 0.9s ease-in-out infinite; }
+.status.live .wave i:nth-child(2) { animation-delay: .15s; }
+.status.live .wave i:nth-child(3) { animation-delay: .3s; }
+.status.live .wave i:nth-child(4) { animation-delay: .45s; }
+@keyframes bar { 0%, 100% { height: 4px; } 50% { height: 14px; } }
+.convo { display: flex; flex-direction: column; gap: 14px; padding: 16px; min-height: 320px; }
+.msg { display: flex; flex-direction: column; gap: 4px; max-width: 92%; }
+.msg.employee { align-self: flex-start; }
+.msg.concierge { align-self: flex-end; }
+.who { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.msg.concierge .who { text-align: right; }
+.bubble { padding: 10px 14px; border-radius: 12px; overflow-wrap: anywhere; }
+.employee .bubble { background: var(--surface-2); border-top-left-radius: 4px; }
+.concierge .bubble { background: var(--accent-soft); border-top-right-radius: 4px; }
+.pii { background: var(--crit-soft); color: var(--crit); border-radius: 4px; padding: 0 4px; text-decoration: line-through; text-decoration-thickness: 1px; font-family: var(--mono); font-size: .92em; }
+.tok { background: var(--warn-soft); color: var(--warn); border-radius: 4px; padding: 0 4px; font-family: var(--mono); font-size: .92em; font-weight: 500; }
+.outcome { margin: 0 16px 16px; padding: 10px 14px; border-radius: 8px; font-weight: 500; background: var(--good-soft); color: var(--good); }
+.outcome.handoff { background: var(--accent-soft); color: var(--ink); }
+.outcome[hidden] { display: none !important; }
+.stages { list-style: none; margin: 0; padding: 8px; display: flex; flex-direction: column; gap: 8px; }
+.stage { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 12px; padding: 12px; border: 1px solid transparent; border-radius: 10px; opacity: .5; transition: opacity .25s, border-color .25s, background .25s; }
+.stage[data-state="active"] { opacity: 1; border-color: var(--accent); background: var(--accent-soft); }
+.stage[data-state="done"] { opacity: 1; border-color: var(--line); }
+.stage[data-state="blocked"] { opacity: 1; border-color: var(--crit); background: var(--crit-soft); }
+.num { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--line); display: grid; place-items: center; font-family: var(--mono); font-size: 12px; color: var(--muted); background: var(--surface); }
+.stage[data-state="active"] .num { border-color: var(--accent); color: var(--accent); }
+.stage[data-state="done"] .num { background: var(--good); border-color: var(--good); color: var(--surface); }
+.stage[data-state="blocked"] .num { background: var(--crit); border-color: var(--crit); color: var(--surface); }
+.stage-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.stage-name { font-weight: 600; }
+.stage-sub { color: var(--muted); font-size: 13px; }
+.pill { margin-left: auto; font-family: var(--mono); font-size: 11px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.stage[data-state="active"] .pill { color: var(--accent); }
+.stage[data-state="done"] .pill { color: var(--good); }
+.stage[data-state="blocked"] .pill { color: var(--crit); }
+.body { margin-top: 8px; display: flex; flex-direction: column; gap: 10px; font-size: 14px; min-width: 0; }
+.body:empty { display: none; }
+.lbl { display: block; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; margin-bottom: 2px; }
+.kv { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 14px; margin: 0; font-size: 13px; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; font-family: var(--mono); overflow-wrap: anywhere; }
+.sop { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: var(--surface); }
+.sop-id { font-family: var(--mono); font-size: 12px; color: var(--accent); }
+.sop-title { font-weight: 600; }
+.sop ol { margin: 6px 0 0; padding-left: 20px; color: var(--muted); font-size: 13px; }
+.note { color: var(--muted); font-size: 13px; margin: 0; }
+.foot { margin-top: 20px; color: var(--muted); font-size: 13px; max-width: 80ch; }
+@media (max-height: 620px), (max-width: 640px) {
+  .wrap { padding-block: 10px 16px; padding-inline: 12px; }
+  h1 { font-size: 19px; line-height: 1.2; }
+  .lede { font-size: 12px; margin: 4px 0 0; }
+  .bar { margin-block: 10px 12px; gap: 8px; }
+  .tab, .ghost { padding: 4px 10px; min-height: 32px; font-size: 12px; }
+  .go { padding: 4px 14px; min-height: 32px; font-size: 12px; }
+  .panel-head { padding: 8px 12px; }
+  .convo { padding: 10px; min-height: 160px; gap: 8px; }
+  .bubble { padding: 6px 10px; font-size: 13px; }
+  .stage { padding: 8px; gap: 8px; }
+  .stages { gap: 4px; padding: 4px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stage { transition: none; }
+  .status.live .wave i { animation: none; height: 10px; }
+}
+</style>
+</head>
+<body>
+
+<main class="wrap">
+  <header>
+    <h1>Agentic Voice Concierge</h1>
+    <p class="lede">An employee calls IT support. Watch the Privacy Gate mask personal data, the answer stay inside verified SOPs, and the Warm Handoff pass context to a person.</p>
+  </header>
+
+  <div class="bar">
+    <div class="tabs" id="tabs" role="group" aria-label="Choose a call"></div>
+    <div class="actions">
+      <button class="go" id="play" type="button">Play call</button>
+      <button class="ghost" id="speed" type="button" aria-label="Playback speed">Speed 1x</button>
+    </div>
+  </div>
+
+  <div class="grid">
+    <section class="panel" aria-label="Call transcript">
+      <div class="panel-head">
+        <h2>Call</h2>
+        <span class="status" id="status"><span class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span id="status-text">Call ended</span></span>
+      </div>
+      <div class="convo" id="convo" aria-live="polite"></div>
+      <p class="outcome" id="outcome" hidden></p>
+    </section>
+
+    <section class="panel" aria-label="What the system did">
+      <div class="panel-head"><h2>Behind the call</h2><span class="status">Simulated</span></div>
+      <ol class="stages" id="stages"></ol>
+    </section>
+  </div>
+
+  <p class="foot">This is a scripted prototype. Transcripts, employee details and SOPs are fictional, and no language model, ServiceNow or Genesys system is connected.</p>
+</main>
+
+<script>
+// Follows the host site's theme: ?theme=dark|light, a postMessage from the parent, or (same-origin iframe) the parent's data-theme or dark/light class. Otherwise it follows the visitor's system setting.
+(function () {
+  var root = document.documentElement;
+  var set = function (t) { if (t === 'dark' || t === 'light') root.setAttribute('data-theme', t); };
+  try { set(new URLSearchParams(location.search).get('theme')); } catch (e) {}
+  window.addEventListener('message', function (e) { var d = e.data; if (d && d.type === 'theme') set(d.theme); });
+  try {
+    if (window.parent !== window) {
+      var pr = window.parent.document.documentElement;
+      var read = function () {
+        var c = pr.classList;
+        set(pr.getAttribute('data-theme') || (c.contains('dark') ? 'dark' : c.contains('light') ? 'light' : null));
+      };
+      read();
+      new MutationObserver(read).observe(pr, { attributes: true, attributeFilter: ['class', 'data-theme'] });
+    }
+  } catch (e) {}
+})();
+</script>
+<script>
+(function () {
+  var reduced = false;
+  try { reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+
+  var STAGES = [
+    { key: 'gate', name: 'Privacy Gate', sub: 'Masks personal data before any model call' },
+    { key: 'intent', name: 'Intent match', sub: 'Maps the call to a known intent' },
+    { key: 'retrieve', name: 'SOP retrieval', sub: 'Searches verified SOPs only' },
+    { key: 'guard', name: 'Grounding check', sub: 'No source, no answer' },
+    { key: 'resolve', name: 'Answer or handoff', sub: 'Resolve the call or pass it to a person' }
+  ];
+
+  var SCENARIOS = [
+    {
+      id: 'vpn', label: 'VPN keeps dropping',
+      utter: [
+        { t: 'Hi, my VPN keeps dropping every few minutes when I work from home. My employee ID is ' },
+        { pii: 'EMPLOYEE_ID', t: '4482913' },
+        { t: '.' }
+      ],
+      intent: 'vpn_connectivity', sentiment: 'Mildly frustrated',
+      sop: {
+        id: 'SOP-VPN-02', title: 'Reconnect and re-register the VPN client',
+        steps: ['Quit the client and confirm Wi-Fi is stable.', 'Open client settings and choose Re-register device.', 'Sign in with MFA and reconnect.', 'If the drop returns within ten minutes, escalate to the network team.']
+      },
+      reply: 'Thanks, I can help with that. First, quit the VPN client and check that your Wi-Fi is stable. Then open the client settings, choose Re-register device, sign in with MFA and reconnect. If it drops again within ten minutes, I will pass you to the network team with these details.',
+      follow: 'That did it. I am back on the network. Thanks.',
+      outcome: 'Resolved on the first call. No agent time used.', kind: 'resolved'
+    },
+    {
+      id: 'mfa', label: 'New phone, MFA broken',
+      utter: [
+        { t: 'I got a new phone and my authenticator codes stopped working. I am ' },
+        { pii: 'NAME', t: 'Priya Nair' },
+        { t: ', and my work email is ' },
+        { pii: 'EMAIL', t: 'priya.nair@example-bank.com' },
+        { t: '.' }
+      ],
+      intent: 'mfa_reset', sentiment: 'Neutral, a little rushed',
+      sop: {
+        id: 'SOP-MFA-03', title: 'Re-enroll MFA on a new device',
+        steps: ['Verify identity with a one-time code sent to the registered backup method.', 'Remove the old device in the security portal.', 'Scan the new enrollment code with the authenticator app.', 'Confirm with the first code from the new device.']
+      },
+      reply: 'Happy to help. I will verify it is you first with a one-time code sent to your registered backup method. Then you remove the old device in the security portal, scan the new enrollment code, and confirm with the first code from your new phone.',
+      follow: 'The code arrived and the new phone is set up. It works.',
+      outcome: 'Resolved on the first call. No agent time used.', kind: 'resolved'
+    },
+    {
+      id: 'stolen', label: 'Stolen laptop',
+      utter: [
+        { t: 'My work laptop was stolen on the train this morning and I think someone could get into my accounts. You can reach me at ' },
+        { pii: 'PHONE', t: '212-555-0143' },
+        { t: '.' }
+      ],
+      intent: 'security_incident_device', sentiment: 'Distressed, urgent',
+      sop: null,
+      packet: {
+        queue: 'Security incident response',
+        summary: 'Employee reports a work laptop stolen on the commute and fears account access. Callback number is masked on file.',
+        tried: 'Nothing yet. No verified SOP covers this flow.'
+      },
+      reply: 'I am sorry that happened. This needs a person right away, so I am connecting you with the security team now. They already have what you told me, so you will not need to repeat it.',
+      follow: null,
+      outcome: 'Handed to a person with context. The employee repeats nothing.', kind: 'handoff'
+    }
+  ];
+
+  var $ = function (s) { return document.querySelector(s); };
+  var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  var rawHtml = function (segs) { return segs.map(function (s) { return s.pii ? '<span class="pii">' + esc(s.t) + '</span>' : esc(s.t); }).join(''); };
+  var maskedHtml = function (segs) { return segs.map(function (s) { return s.pii ? '<span class="tok">[' + s.pii + ']</span>' : esc(s.t); }).join(''); };
+
+  var current = 0, speed = 1, runId = 0;
+  var tabsEl = $('#tabs'), convo = $('#convo'), stagesEl = $('#stages'), outcome = $('#outcome');
+  var statusEl = $('#status'), statusText = $('#status-text'), playBtn = $('#play'), speedBtn = $('#speed');
+
+  SCENARIOS.forEach(function (sc, i) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'tab'; b.textContent = sc.label;
+    b.setAttribute('aria-pressed', i === 0 ? 'true' : 'false');
+    b.addEventListener('click', function () { select(i); run(SCENARIOS[i], {}); });
+    tabsEl.appendChild(b);
+  });
+
+  STAGES.forEach(function (s, i) {
+    var li = document.createElement('li');
+    li.className = 'stage'; li.id = 'st-' + s.key; li.setAttribute('data-state', 'idle');
+    li.innerHTML = '<span class="num">' + (i + 1) + '</span><div><div class="stage-head"><span class="stage-name">' + s.name + '</span><span class="pill" id="pill-' + s.key + '"></span></div><div class="stage-sub">' + s.sub + '</div><div class="body" id="body-' + s.key + '"></div></div>';
+    stagesEl.appendChild(li);
+  });
+
+  function select(i) {
+    current = i;
+    Array.prototype.forEach.call(tabsEl.children, function (b, j) { b.setAttribute('aria-pressed', j === i ? 'true' : 'false'); });
+  }
+  function setState(key, state, pill) {
+    $('#st-' + key).setAttribute('data-state', state);
+    $('#pill-' + key).textContent = pill || '';
+  }
+  function setBody(key, html) { $('#body-' + key).innerHTML = html; }
+  function setStatus(text, live) { statusText.textContent = text; statusEl.className = 'status' + (live ? ' live' : ''); }
+  function reset() {
+    convo.innerHTML = ''; outcome.hidden = true; outcome.className = 'outcome';
+    STAGES.forEach(function (s) { setState(s.key, 'idle', ''); setBody(s.key, ''); });
+  }
+  function addMsg(who, html) {
+    var m = document.createElement('div');
+    m.className = 'msg ' + who.toLowerCase();
+    m.innerHTML = '<span class="who">' + who + '</span><div class="bubble"></div>';
+    m.lastChild.innerHTML = html;
+    convo.appendChild(m);
+    try { m.scrollIntoView({ block: 'nearest', behavior: reduced ? 'auto' : 'smooth' }); } catch (e) {}
+    return m.lastChild;
+  }
+
+  async function run(sc, opts) {
+    var my = ++runId, instant = !!opts.instant;
+    var wait = function (ms) {
+      return new Promise(function (r) { setTimeout(r, instant ? 0 : ms / speed); }).then(function () { return my === runId; });
+    };
+    var reveal = async function (el, text) {
+      if (instant || reduced) { el.textContent = text; return my === runId; }
+      var words = text.split(' ');
+      for (var i = 0; i < words.length; i++) {
+        el.textContent = words.slice(0, i + 1).join(' ');
+        if (!(await wait(85))) return false;
+      }
+      return true;
+    };
+
+    reset();
+    playBtn.textContent = 'Replay';
+    setStatus('Listening', true);
+    if (!(await wait(500))) return;
+    addMsg('Employee', rawHtml(sc.utter));
+    setStatus('Thinking', false);
+    if (!(await wait(900))) return;
+
+    // 1 Privacy Gate
+    setState('gate', 'active', 'Masking');
+    if (!(await wait(700))) return;
+    var n = sc.utter.filter(function (s) { return s.pii; }).length;
+    setBody('gate', '<div><span class="lbl">Heard</span>' + rawHtml(sc.utter) + '</div><div><span class="lbl">Sent to the model</span>' + maskedHtml(sc.utter) + '</div>');
+    setState('gate', 'done', n + ' masked');
+    if (!(await wait(1500))) return;
+
+    // 2 Intent
+    setState('intent', 'active', 'Matching');
+    if (!(await wait(700))) return;
+    setBody('intent', '<dl class="kv"><dt>Intent</dt><dd>' + sc.intent + '</dd><dt>Sentiment</dt><dd>' + esc(sc.sentiment) + '</dd></dl>');
+    setState('intent', 'done', 'Matched');
+    if (!(await wait(1200))) return;
+
+    // 3 Retrieval
+    setState('retrieve', 'active', 'Searching');
+    if (!(await wait(800))) return;
+    if (sc.sop) {
+      setBody('retrieve', '<div class="sop"><span class="sop-id">' + sc.sop.id + '</span><div class="sop-title">' + esc(sc.sop.title) + '</div><ol>' + sc.sop.steps.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ol></div>');
+      setState('retrieve', 'done', 'Source found');
+    } else {
+      setBody('retrieve', '<p class="note">No verified SOP matches this intent.</p>');
+      setState('retrieve', 'blocked', 'No source');
+    }
+    if (!(await wait(1500))) return;
+
+    // 4 Grounding check
+    setState('guard', 'active', 'Checking');
+    if (!(await wait(700))) return;
+    if (sc.sop) {
+      setBody('guard', '<p class="note">The reply may use only the steps in ' + sc.sop.id + '. Anything else is left out.</p>');
+      setState('guard', 'done', 'Grounded');
+    } else {
+      setBody('guard', '<p class="note">With no source, the concierge does not improvise. It hands the call to a person.</p>');
+      setState('guard', 'blocked', 'Handoff');
+    }
+    if (!(await wait(1200))) return;
+
+    // 5 Answer or handoff
+    setState('resolve', 'active', sc.sop ? 'Answering' : 'Handing off');
+    if (!sc.sop) {
+      var p = sc.packet;
+      setBody('resolve', '<dl class="kv"><dt>Queue</dt><dd>' + esc(p.queue) + '</dd><dt>Intent</dt><dd>' + sc.intent + '</dd><dt>Sentiment</dt><dd>' + esc(sc.sentiment) + '</dd><dt>Summary</dt><dd>' + esc(p.summary) + '</dd><dt>Tried</dt><dd>' + esc(p.tried) + '</dd></dl><p class="note">The agent desktop opens the case with these fields already filled in. Simulated for ServiceNow or Genesys.</p>');
+      if (!(await wait(1100))) return;
+    }
+    setStatus('Speaking', true);
+    var body = addMsg('Concierge', '');
+    if (!(await reveal(body, sc.reply))) return;
+    if (sc.sop) {
+      setBody('resolve', '<p class="note">Answer composed from ' + sc.sop.id + '.</p>');
+      setState('resolve', 'done', 'Answered');
+    } else {
+      setState('resolve', 'done', 'Handed off');
+    }
+    if (sc.follow) {
+      setStatus('Listening', true);
+      if (!(await wait(1100))) return;
+      addMsg('Employee', esc(sc.follow));
+    }
+    setStatus('Call ended', false);
+    outcome.textContent = sc.outcome;
+    outcome.className = 'outcome' + (sc.kind === 'handoff' ? ' handoff' : '');
+    outcome.hidden = false;
+  }
+
+  playBtn.addEventListener('click', function () { run(SCENARIOS[current], {}); });
+  speedBtn.addEventListener('click', function () {
+    speed = speed === 1 ? 2 : 1;
+    speedBtn.textContent = 'Speed ' + speed + 'x';
+  });
+
+  // Open on a finished call so the page is complete at rest; Play runs it live.
+  run(SCENARIOS[0], { instant: true });
+})();
+</script>
+
+</body>
+</html>

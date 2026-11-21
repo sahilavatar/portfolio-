@@ -1,0 +1,410 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>AgentPay Live Demo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: control-room board — spend-limit meter across the top, then principal | agent+voucher | merchant checks+ledger */
+:root {
+  --bg: #eef1f3; --panel: #ffffff; --ink: #18232b; --muted: #5d6b75; --line: #d5dce1;
+  --accent: #0f5f73; --accent-soft: #dcecf0; --ok: #1d7a46; --ok-soft: #e1f2e7; --bad: #b3261e; --bad-soft: #fbe5e3;
+  --warn: #9a6200; --code: #f5f7f8;
+  --f-display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1519; --panel: #172026; --ink: #e3eaee; --muted: #93a2ab; --line: #2a363e;
+  --accent: #5fb9cf; --accent-soft: #163640; --ok: #5fcf8c; --ok-soft: #15301f; --bad: #f08a80; --bad-soft: #3a1c1a;
+  --warn: #e3b55a; --code: #11191e; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f1519; --panel: #172026; --ink: #e3eaee; --muted: #93a2ab; --line: #2a363e;
+  --accent: #5fb9cf; --accent-soft: #163640; --ok: #5fcf8c; --ok-soft: #15301f; --bad: #f08a80; --bad-soft: #3a1c1a;
+  --warn: #e3b55a; --code: #11191e; color-scheme: dark }
+
+body { background: var(--bg); color: var(--ink); font: 14px/1.5 var(--f-body); }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 20px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 16px; }
+h1, h2 { font-family: var(--f-display); text-wrap: balance; margin: 0; }
+h1 { font-size: 1.9rem; font-weight: 600; letter-spacing: -0.01em; }
+h2 { font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.sub { color: var(--muted); margin: 4px 0 0; max-width: 68ch; }
+
+header { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: end; justify-content: space-between; }
+.badge { font: 500 0.72rem var(--f-mono); padding: 3px 8px; border-radius: 4px; border: 1px solid var(--line); color: var(--muted); background: var(--panel); }
+
+/* Spend-limit meter */
+.meter { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; display: grid; gap: 10px; }
+.meter-top { display: flex; flex-wrap: wrap; gap: 8px 28px; align-items: baseline; }
+.stat { display: grid; gap: 0; }
+.stat b { font: 600 1.5rem var(--f-mono); font-variant-numeric: tabular-nums; }
+.stat span { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.bar { position: relative; height: 14px; border-radius: 3px; background: var(--accent-soft); overflow: hidden; }
+.bar .spent { position: absolute; inset: 0 auto 0 0; background: var(--accent); transition: width .4s ease; }
+.bar.paused { background: repeating-linear-gradient(-45deg, var(--bad-soft) 0 8px, var(--panel) 8px 16px); }
+.bar.paused .spent { background: var(--bad); }
+.scale { display: flex; justify-content: space-between; font: 0.72rem var(--f-mono); color: var(--muted); }
+.pill { font: 600 0.72rem var(--f-body); text-transform: uppercase; letter-spacing: 0.06em; padding: 2px 8px; border-radius: 99px; }
+.pill.on { background: var(--ok-soft); color: var(--ok); } .pill.off { background: var(--bad-soft); color: var(--bad); }
+
+.board { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.2fr) minmax(0, 1.2fr); gap: 16px; align-items: start; }
+@media (max-width: 980px) { .board { grid-template-columns: minmax(0, 1fr); } }
+.col { display: grid; gap: 16px; min-width: 0; }
+section { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; display: grid; gap: 10px; min-width: 0; }
+.role { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.role .who { font: 0.72rem var(--f-mono); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+button { font: 500 0.85rem var(--f-body); color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 7px 10px; cursor: pointer; text-align: left; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button:disabled { opacity: .5; cursor: not-allowed; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--panel); }
+.scenes { display: grid; gap: 6px; }
+.scenes button { display: grid; grid-template-columns: 1.6em 1fr; gap: 2px 6px; }
+.scenes button small { grid-column: 2; color: var(--muted); font-size: 0.76rem; font-weight: 400; }
+.scenes button .n { font: 600 0.8rem var(--f-mono); color: var(--accent); }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+label.tog { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; }
+.field { display: grid; grid-template-columns: 1fr 90px; gap: 8px; align-items: center; font-size: 0.85rem; }
+.field input { font: 0.85rem var(--f-mono); padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--code); color: var(--ink); width: 100%; box-sizing: border-box; }
+
+.catalog { display: grid; gap: 6px; }
+.catalog button { display: flex; justify-content: space-between; gap: 10px; }
+.catalog .price { font-family: var(--f-mono); color: var(--muted); }
+
+pre { margin: 0; font: 0.74rem/1.55 var(--f-mono); background: var(--code); border: 1px solid var(--line); border-radius: 6px; padding: 10px; overflow-x: auto; white-space: pre; }
+.voucher-empty { color: var(--muted); font-size: 0.85rem; }
+
+.checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.checks li { display: grid; grid-template-columns: 22px 1fr auto; gap: 8px; align-items: center; padding: 5px 8px; border-radius: 5px; font-size: 0.85rem; background: var(--code); }
+.checks li .mark { font: 600 0.8rem var(--f-mono); text-align: center; color: var(--muted); }
+.checks li .det { font: 0.72rem var(--f-mono); color: var(--muted); }
+.checks li.pass { background: var(--ok-soft); } .checks li.pass .mark { color: var(--ok); }
+.checks li.fail { background: var(--bad-soft); } .checks li.fail .mark, .checks li.fail .det { color: var(--bad); }
+.checks li.skip { opacity: .45; }
+.verdict { font: 600 0.9rem var(--f-display); letter-spacing: 0.02em; padding: 8px 10px; border-radius: 6px; background: var(--code); color: var(--muted); }
+.verdict.ok { background: var(--ok-soft); color: var(--ok); } .verdict.bad { background: var(--bad-soft); color: var(--bad); }
+
+.ledger { display: grid; gap: 0; }
+.ledger .tx { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 0.85rem; }
+.ledger .tx:first-child { border-top: 0; }
+.ledger .tx .amt { font: 500 0.85rem var(--f-mono); }
+.ledger .tx .meta { grid-column: 1 / -1; font: 0.7rem var(--f-mono); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ledger .tx.bad .amt { color: var(--bad); text-decoration: line-through; }
+.empty { color: var(--muted); font-size: 0.85rem; }
+
+.log { font: 0.74rem/1.6 var(--f-mono); background: var(--code); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; max-height: 220px; overflow: auto; }
+.log div { white-space: pre-wrap; word-break: break-word; }
+.log .a { color: var(--accent); } .log .ok { color: var(--ok); } .log .bad { color: var(--bad); } .log .p { color: var(--warn); }
+footer { color: var(--muted); font-size: 0.8rem; max-width: 90ch; }
+@media (max-height: 480px), (max-width: 600px) {
+  .wrap { padding-top: 34px; padding-bottom: 18px; gap: 10px; }
+  header { gap: 6px 12px; }
+  h1 { font-size: 1.4rem; }
+  .sub { font-size: 0.78rem; line-height: 1.35; margin-top: 2px; }
+  .meter { padding: 10px 12px; gap: 6px; }
+  .meter-top { gap: 6px 18px; }
+  .stat b { font-size: 1.15rem; }
+}
+@media (prefers-reduced-motion: reduce) { .bar .spent { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>AgentPay</h1>
+      <p class="sub">An AI agent pays a verified merchant in RLUSD with a signed EIP-712 voucher, and can never spend past the limit its principal funded.</p>
+    </div>
+    <div class="row"><span class="badge">XRPL EVM · chain 1449000</span><span class="badge" id="libStatus">loading signer…</span></div>
+  </header>
+
+  <div class="meter" aria-live="polite">
+    <div class="meter-top">
+      <div class="stat"><b id="mRemaining">50.00</b><span>RLUSD remaining</span></div>
+      <div class="stat"><b id="mSpent">0.00</b><span>Spent</span></div>
+      <div class="stat"><b id="mFunded">50.00</b><span>Funded limit</span></div>
+      <div class="stat"><b id="mCap">20.00</b><span>Max per payment</span></div>
+      <span class="pill on" id="mStatus">Active</span>
+    </div>
+    <div class="bar" id="bar"><div class="spent" id="barSpent" style="width:0%"></div></div>
+    <div class="scale"><span>0</span><span id="scaleMax">50 RLUSD</span></div>
+  </div>
+
+  <div class="board">
+    <div class="col">
+      <section>
+        <h2>Demo scenes</h2>
+        <div class="scenes" id="scenes"></div>
+        <div class="row"><button id="runAll" class="primary">Run all scenes</button><button id="reset">Reset</button></div>
+      </section>
+      <section>
+        <div class="role"><h2>Principal</h2><span class="who mono" id="principalAddr"></span></div>
+        <div class="field"><label for="fundAmt">Top up limit (RLUSD)</label><input id="fundAmt" type="number" min="1" step="1" value="25"></div>
+        <button id="fundBtn">Fund limit</button>
+        <div class="field"><label for="capAmt">Max per payment</label><input id="capAmt" type="number" min="0" step="1" value="20"></div>
+        <button id="capBtn">Set cap</button>
+        <label class="tog"><input type="checkbox" id="pauseTog"> Kill switch (pause agent)</label>
+      </section>
+      <section>
+        <h2>Verifier (Know Your Agent)</h2>
+        <label class="tog"><input type="checkbox" id="agentVerTog" checked> Agent verified</label>
+        <label class="tog"><input type="checkbox" id="merchVerTog" checked> Merchant verified</label>
+      </section>
+    </div>
+
+    <div class="col">
+      <section>
+        <div class="role"><h2>Agent</h2><span class="who mono" id="agentAddr"></span></div>
+        <p class="sub" style="margin:0">Holds a signing key only. No funds, no gas. Pick something to buy:</p>
+        <div class="catalog" id="catalog"></div>
+        <label class="tog"><input type="checkbox" id="rogueTog"> Rogue mode: skip the agent's own budget checks</label>
+      </section>
+      <section>
+        <h2>Signed voucher</h2>
+        <div id="voucher"><p class="voucher-empty">The next payment voucher will appear here, with its EIP-712 signature.</p></div>
+      </section>
+      <section>
+        <h2>Event log</h2>
+        <div class="log" id="log"></div>
+      </section>
+    </div>
+
+    <div class="col">
+      <section>
+        <div class="role"><h2>Merchant checks</h2><span class="who mono">Acme Data Co</span></div>
+        <ul class="checks" id="checks"></ul>
+        <div class="verdict" id="verdict">Waiting for a voucher</div>
+      </section>
+      <section>
+        <h2>Settlement ledger</h2>
+        <div class="ledger" id="ledger"><p class="empty">No payments yet.</p></div>
+      </section>
+    </div>
+  </div>
+
+  <footer>Signatures and verification are real EIP-712 (ethers v6) in your browser. The chain is simulated in-page with the same checks, in the same order, as <span class="mono">AgentPay.redeem()</span>. The repo runs the identical flow on the XRPL EVM testnet.</footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const hasEthers = typeof window.ethers !== "undefined";
+  const E = window.ethers;
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const sleep = (ms) => new Promise((r) => setTimeout(r, reduce ? 0 : ms));
+
+  const CHAIN_ID = 1449000;
+  // Placeholder AgentPay address, checksummed so ethers accepts it in the EIP-712 domain
+  const CONTRACT_RAW = "0x7a9c3f1e0b5d2a64c8e1f09bb3a4d6e52c0f8a11";
+  const CONTRACT = typeof window.ethers !== "undefined" ? window.ethers.getAddress(CONTRACT_RAW) : CONTRACT_RAW;
+  const DOMAIN = { name: "AgentPay", version: "1", chainId: CHAIN_ID, verifyingContract: CONTRACT };
+  const TYPES = { Voucher: [
+    { name: "agent", type: "address" }, { name: "merchant", type: "address" }, { name: "amount", type: "uint256" },
+    { name: "nonce", type: "uint256" }, { name: "deadline", type: "uint256" }, { name: "orderRef", type: "bytes32" } ] };
+  const CATALOG = [
+    { sku: "weather-api-1k", name: "Weather API, 1,000 calls", price: 4.0 },
+    { sku: "gpu-hour", name: "GPU compute, 1 hour (A100)", price: 12.5 },
+    { sku: "market-report", name: "Market data report, Q3 equities", price: 19.0 },
+    { sku: "dataset-premium", name: "Premium training dataset license", price: 45.0 },
+  ];
+  const CHECKS = [
+    ["deadline", "Voucher not expired"], ["kya", "Agent is verified (KYA)"], ["merchant", "Merchant is verified"],
+    ["sig", "Signature is the agent's"], ["nonce", "Nonce not used before"], ["paused", "Limit active, not paused"],
+    ["cap", "Within per-payment cap"], ["limit", "Within remaining limit"] ];
+
+  const randHex = (n) => "0x" + Array.from(crypto.getRandomValues(new Uint8Array(n)), (b) => b.toString(16).padStart(2, "0")).join("");
+  const short = (a) => a.slice(0, 6) + "…" + a.slice(-4);
+  const fmt = (n) => n.toFixed(2);
+
+  let agent, principalAddr, merchantAddr, S, lastVoucher, busy = false;
+
+  function freshState() {
+    return { funded: 50, spent: 0, cap: 20, paused: false, agentVerified: true, merchantVerified: true, nonces: new Set(), ledger: [] };
+  }
+
+  async function init() {
+    if (hasEthers) {
+      agent = E.Wallet.createRandom();
+      principalAddr = E.Wallet.createRandom().address;
+      merchantAddr = E.Wallet.createRandom().address;
+      $("libStatus").textContent = "EIP-712 signer ready";
+    } else {
+      $("libStatus").textContent = "signer library blocked";
+      agent = { address: randHex(20) }; principalAddr = randHex(20); merchantAddr = randHex(20);
+    }
+    $("agentAddr").textContent = short(agent.address);
+    $("principalAddr").textContent = short(principalAddr);
+    S = freshState();
+    renderCatalog(); renderScenes(); renderChecks(); render();
+    log("p", `principal funded ${fmt(S.funded)} RLUSD for agent ${short(agent.address)}, cap ${fmt(S.cap)}/payment`);
+  }
+
+  // ───── rendering ─────
+  function render() {
+    const rem = S.funded - S.spent;
+    $("mRemaining").textContent = fmt(rem); $("mSpent").textContent = fmt(S.spent);
+    $("mFunded").textContent = fmt(S.funded); $("mCap").textContent = S.cap ? fmt(S.cap) : "none";
+    $("barSpent").style.width = (S.funded ? Math.min(100, (S.spent / S.funded) * 100) : 0) + "%";
+    $("bar").classList.toggle("paused", S.paused);
+    $("scaleMax").textContent = fmt(S.funded) + " RLUSD";
+    const st = $("mStatus"); st.textContent = S.paused ? "Paused" : "Active"; st.className = "pill " + (S.paused ? "off" : "on");
+    $("pauseTog").checked = S.paused; $("agentVerTog").checked = S.agentVerified; $("merchVerTog").checked = S.merchantVerified;
+    const L = $("ledger");
+    if (!S.ledger.length) L.innerHTML = '<p class="empty">No payments yet.</p>';
+    else L.innerHTML = S.ledger.slice().reverse().map((t) =>
+      `<div class="tx ${t.ok ? "" : "bad"}"><span>${t.item}</span><span class="amt">${t.ok ? "+" : ""}${fmt(t.amount)} RLUSD</span>
+       <span class="meta">${t.ok ? "settled · tx " + t.tx.slice(0, 18) + "…" : "rejected · " + t.reason}</span></div>`).join("");
+    document.querySelectorAll("button[data-lock]").forEach((b) => (b.disabled = busy));
+  }
+  function renderCatalog() {
+    $("catalog").innerHTML = CATALOG.map((c) =>
+      `<button data-lock data-sku="${c.sku}"><span>${c.name}</span><span class="price">${fmt(c.price)}</span></button>`).join("");
+    $("catalog").onclick = (e) => { const b = e.target.closest("button"); if (b) run(() => purchase(b.dataset.sku, { rogue: $("rogueTog").checked })); };
+  }
+  function renderChecks(states = {}) {
+    $("checks").innerHTML = CHECKS.map(([k, label]) => {
+      const s = states[k]; const cls = s ? s.state : "";
+      const mark = cls === "pass" ? "✓" : cls === "fail" ? "✗" : "·";
+      return `<li class="${cls}"><span class="mark">${mark}</span><span>${label}</span><span class="det">${s && s.det ? s.det : ""}</span></li>`;
+    }).join("");
+  }
+  function setVerdict(cls, text) { const v = $("verdict"); v.className = "verdict " + cls; v.textContent = text; }
+  function log(cls, text) {
+    const d = document.createElement("div"); d.className = cls; d.textContent = text;
+    $("log").appendChild(d); $("log").scrollTop = $("log").scrollHeight;
+  }
+  function showVoucher(v, sig) {
+    const j = { domain: { name: "AgentPay", version: "1", chainId: CHAIN_ID, verifyingContract: short(CONTRACT) },
+      voucher: { agent: short(v.agent), merchant: short(v.merchant), amount: v.amount.toString() + "  // " + fmt(v._display) + " RLUSD",
+        nonce: v.nonce.toString().slice(0, 14) + "…", deadline: String(v.deadline), orderRef: v.orderRef.slice(0, 18) + "…" },
+      signature: sig.slice(0, 26) + "…" + sig.slice(-8) };
+    $("voucher").innerHTML = "<pre></pre>"; $("voucher").firstChild.textContent = JSON.stringify(j, null, 2).replace(/"([^"]+)  \/\/ ([^"]+)"/, '"$1"  // $2');
+  }
+
+  // ───── agent ─────
+  async function signVoucher(wallet, v) {
+    const typed = { agent: v.agent, merchant: v.merchant, amount: v.amount, nonce: v.nonce, deadline: v.deadline, orderRef: v.orderRef };
+    return hasEthers ? wallet.signTypedData(DOMAIN, TYPES, typed) : randHex(65);
+  }
+  async function purchase(sku, { rogue = false, wallet = agent, replay = false, tamper = false } = {}) {
+    let v, sig;
+    if (replay) {
+      if (!lastVoucher) { log("bad", "attacker: no voucher to replay yet"); return; }
+      ({ v, sig } = lastVoucher);
+      log("bad", `attacker: resubmitting a captured voucher (${v._item})`);
+    } else {
+      const item = CATALOG.find((c) => c.sku === sku);
+      const orderId = "ord_" + Math.random().toString(36).slice(2, 9);
+      log("a", `agent ${short(wallet.address)}: buying "${item.name}" for ${fmt(item.price)} RLUSD`);
+      if (!rogue) {
+        const rem = S.funded - S.spent;
+        let why = null;
+        if (S.paused) why = "limit is paused by principal";
+        else if (S.cap && item.price > S.cap) why = `price exceeds per-payment cap ${fmt(S.cap)}`;
+        else if (item.price > rem) why = `price exceeds remaining ${fmt(rem)}`;
+        if (why) { log("p", `agent: declined before signing: ${why}`); renderChecks(); setVerdict("", "Agent declined; no voucher was signed"); return; }
+      }
+      v = { agent: wallet.address, merchant: merchantAddr, amount: hasEthers ? E.parseUnits(String(item.price), 18) : BigInt(item.price * 1e6),
+        nonce: BigInt(randHex(16)), deadline: BigInt(Math.floor(Date.now() / 1000) + 600),
+        orderRef: hasEthers ? E.id(orderId) : randHex(32), _display: item.price, _item: item.name };
+      sig = await signVoucher(wallet, v);
+      lastVoucher = { v, sig };
+      if (tamper) {
+        const big = 45;
+        v = { ...v, amount: hasEthers ? E.parseUnits(String(big), 18) : BigInt(big * 1e6), _display: big };
+        log("bad", `attacker: rewrote amount to ${fmt(big)} RLUSD after signing`);
+      }
+    }
+    showVoucher(v, sig);
+    log("", `merchant: received voucher, checking…`);
+    await redeem(v, sig);
+  }
+
+  // ───── simulated AgentPay.redeem(), same order as the contract ─────
+  async function redeem(v, sig) {
+    const amt = v._display, rem = S.funded - S.spent;
+    let signer = null;
+    try { signer = hasEthers ? E.verifyTypedData(DOMAIN, TYPES,
+      { agent: v.agent, merchant: v.merchant, amount: v.amount, nonce: v.nonce, deadline: v.deadline, orderRef: v.orderRef }, sig) : v.agent; } catch (e) { signer = null; }
+    const tests = {
+      deadline: [BigInt(Math.floor(Date.now() / 1000)) <= v.deadline, "10 min ttl"],
+      kya: [v.agent === agent.address && S.agentVerified, v.agent === agent.address ? short(v.agent) : "not in registry"],
+      merchant: [v.merchant === merchantAddr && S.merchantVerified, short(v.merchant)],
+      sig: [!!signer && signer.toLowerCase() === v.agent.toLowerCase(), signer ? "recovered " + short(signer) : "invalid"],
+      nonce: [!S.nonces.has(v.nonce.toString()), S.nonces.has(v.nonce.toString()) ? "already redeemed" : "fresh"],
+      paused: [!S.paused, S.paused ? "kill switch on" : "active"],
+      cap: [!S.cap || amt <= S.cap, S.cap ? `${fmt(amt)} ≤ ${fmt(S.cap)}` : "no cap"],
+      limit: [amt <= rem, `${fmt(amt)} ≤ ${fmt(rem)}`],
+    };
+    const states = {}; renderChecks(states); setVerdict("", "Checking…");
+    let failed = null;
+    for (const [k] of CHECKS) {
+      await sleep(140);
+      if (failed) { states[k] = { state: "skip" }; continue; }
+      const [ok, det] = tests[k];
+      states[k] = { state: ok ? "pass" : "fail", det: ok ? det : (k === "cap" || k === "limit" ? det.replace("≤", ">") : det) };
+      if (!ok) failed = CHECKS.find((c) => c[0] === k)[1];
+      renderChecks(states);
+    }
+    if (failed) {
+      S.ledger.push({ item: v._item, amount: amt, ok: false, reason: failed.toLowerCase() + " failed" });
+      setVerdict("bad", `Rejected: ${failed.toLowerCase()} failed. No funds moved.`);
+      log("bad", `merchant: rejected: ${failed.toLowerCase()} failed`);
+    } else {
+      S.nonces.add(v.nonce.toString()); S.spent += amt;
+      const tx = hasEthers ? E.keccak256(sig) : randHex(32);
+      S.ledger.push({ item: v._item, amount: amt, ok: true, tx });
+      setVerdict("ok", `Settled ${fmt(amt)} RLUSD to merchant · ${fmt(S.funded - S.spent)} left`);
+      log("ok", `merchant: settled ${fmt(amt)} RLUSD · tx ${tx.slice(0, 14)}…`);
+    }
+    render();
+  }
+
+  // ───── scenes ─────
+  const SCENES = [
+    ["Within budget", "Agent buys weather data and GPU time", async () => { await purchase("weather-api-1k"); await sleep(500); await purchase("gpu-hour"); }],
+    ["Over the cap", "Agent declines a 45 RLUSD item on its own", async () => purchase("dataset-premium")],
+    ["Rogue agent", "Skips its own checks; the contract blocks it", async () => purchase("dataset-premium", { rogue: true })],
+    ["Tampered voucher", "Amount rewritten after signing", async () => purchase("weather-api-1k", { tamper: true })],
+    ["Replay attack", "Same voucher submitted twice", async () => { await purchase("weather-api-1k"); await sleep(500); await purchase(null, { replay: true }); }],
+    ["Kill switch", "Principal pauses, agent tries to pay", async () => {
+      S.paused = true; render(); log("p", "principal: kill switch ON"); await sleep(400);
+      await purchase("market-report", { rogue: true }); await sleep(400);
+      S.paused = false; render(); log("p", "principal: kill switch OFF"); }],
+    ["Unverified agent", "An unknown key tries to pay", async () => purchase("weather-api-1k", { rogue: true, wallet: hasEthers ? E.Wallet.createRandom() : { address: randHex(20) } })],
+  ];
+  function renderScenes() {
+    $("scenes").innerHTML = SCENES.map(([t, d], i) =>
+      `<button data-lock data-i="${i}"><span class="n">${i + 1}</span><span>${t}</span><small>${d}</small></button>`).join("");
+    $("scenes").onclick = (e) => { const b = e.target.closest("button"); if (b) run(SCENES[+b.dataset.i][2], SCENES[+b.dataset.i][0]); };
+  }
+  async function run(fn, title) {
+    if (busy) return; busy = true; render();
+    if (title) log("p", `── ${title} ──`);
+    try { await fn(); } catch (e) { log("bad", "error: " + e.message); }
+    busy = false; render();
+  }
+
+  // ───── controls ─────
+  $("runAll").setAttribute("data-lock", "");
+  $("runAll").onclick = () => run(async () => {
+    for (const [t, , fn] of SCENES) { log("p", `── ${t} ──`); await fn(); await sleep(900); }
+  });
+  $("reset").onclick = () => { if (busy) return; S = freshState(); lastVoucher = null; $("log").innerHTML = "";
+    $("voucher").innerHTML = '<p class="voucher-empty">The next payment voucher will appear here, with its EIP-712 signature.</p>';
+    renderChecks(); setVerdict("", "Waiting for a voucher"); render(); log("p", `principal funded ${fmt(S.funded)} RLUSD, cap ${fmt(S.cap)}/payment`); };
+  $("fundBtn").onclick = () => { const n = Number($("fundAmt").value); if (n > 0) { S.funded += n; log("p", `principal: topped up ${fmt(n)} RLUSD`); render(); } };
+  $("capBtn").onclick = () => { const n = Math.max(0, Number($("capAmt").value) || 0); S.cap = n; log("p", `principal: per-payment cap ${n ? fmt(n) : "removed"}`); render(); };
+  $("pauseTog").onchange = (e) => { S.paused = e.target.checked; log("p", `principal: kill switch ${S.paused ? "ON" : "OFF"}`); render(); };
+  $("agentVerTog").onchange = (e) => { S.agentVerified = e.target.checked; log("p", `verifier: agent ${S.agentVerified ? "verified" : "revoked"}`); render(); };
+  $("merchVerTog").onchange = (e) => { S.merchantVerified = e.target.checked; log("p", `verifier: merchant ${S.merchantVerified ? "verified" : "removed"}`); render(); };
+
+  init();
+})();
+</script>
+
+</body></html>
